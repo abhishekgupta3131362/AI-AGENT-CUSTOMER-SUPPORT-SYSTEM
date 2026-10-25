@@ -110,6 +110,46 @@ def init_db():
         )
     """)
     
+    # 7. Hotel Rooms Table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS hotel_rooms (
+            id TEXT PRIMARY KEY,
+            room_type TEXT NOT NULL,
+            price_per_night REAL NOT NULL,
+            max_guests INTEGER DEFAULT 2,
+            available_count INTEGER DEFAULT 5,
+            amenities TEXT,
+            description TEXT
+        )
+    """)
+
+    # 8. Hotel Reservations Table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS hotel_reservations (
+            id TEXT PRIMARY KEY,
+            guest_name TEXT NOT NULL,
+            room_id TEXT NOT NULL,
+            check_in TEXT NOT NULL,
+            check_out TEXT NOT NULL,
+            status TEXT DEFAULT 'CONFIRMED',
+            special_requests TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (room_id) REFERENCES hotel_rooms(id)
+        )
+    """)
+
+    # 9. SaaS Error Codes & Troubleshooting Table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS saas_error_docs (
+            code TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            severity TEXT DEFAULT 'MEDIUM',
+            cause TEXT NOT NULL,
+            solution TEXT NOT NULL,
+            code_sample TEXT
+        )
+    """)
+
     # Safe column additions for existing databases
     for col_def in [
         ("chat_sessions", "sentiment_score REAL DEFAULT 0.0"),

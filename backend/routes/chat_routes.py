@@ -12,6 +12,7 @@ def chat():
     data = request.get_json() or {}
     message = data.get("message", "").strip()
     session_id = data.get("session_id", "default_session").strip()
+    agent_type = data.get("agent_type", "ecommerce").strip().lower()
 
     if not message:
         return jsonify({"error": "Message is required"}), 400
@@ -23,7 +24,7 @@ def chat():
     )
     history = list(reversed(history)) if history else []
 
-    result = agent.run_agent(message, session_id=session_id, chat_history=history)
+    result = agent.run_agent(message, session_id=session_id, chat_history=history, agent_type=agent_type)
     return jsonify(result)
 
 @chat_bp.route("/api/chat/stream", methods=["POST"])
@@ -32,6 +33,7 @@ def chat_stream():
     data = request.get_json() or {}
     message = data.get("message", "").strip()
     session_id = data.get("session_id", "default_session").strip()
+    agent_type = data.get("agent_type", "ecommerce").strip().lower()
 
     if not message:
         return jsonify({"error": "Message is required"}), 400
@@ -44,7 +46,7 @@ def chat_stream():
     history = list(reversed(history)) if history else []
 
     def event_stream():
-        for event in agent.run_agent_stream(message, session_id=session_id, chat_history=history):
+        for event in agent.run_agent_stream(message, session_id=session_id, chat_history=history, agent_type=agent_type):
             yield f"data: {json.dumps(event)}\n\n"
         yield "data: [DONE]\n\n"
 

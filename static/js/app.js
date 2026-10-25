@@ -13,16 +13,48 @@ document.addEventListener("DOMContentLoaded", () => {
   loadOrders();
 });
 
-// View Navigation
+let activeAgentType = "ecommerce";
+let isVoiceTTSActive = true;
+let isRecordingMic = false;
+let callDurationSeconds = 45;
+let callTimerInterval = null;
+
+// Initialization
+document.addEventListener("DOMContentLoaded", () => {
+  loadSettings();
+  loadTickets();
+  loadKnowledge();
+  loadOrders();
+  startCallTimer();
+});
+
+// View Navigation across 5 Agent Types + Admin
 function switchView(view) {
-  document.getElementById("view-chat").classList.toggle("active", view === "chat");
-  document.getElementById("view-admin").classList.toggle("active", view === "admin");
-  document.getElementById("tab-chat").classList.toggle("active", view === "chat");
-  document.getElementById("tab-admin").classList.toggle("active", view === "admin");
+  const allViews = ["ecommerce", "hotel", "voice", "whatsapp", "saas", "admin"];
+  allViews.forEach(v => {
+    const el = document.getElementById(`view-${v}`);
+    const tab = document.getElementById(`tab-${v}`);
+    if (el) el.classList.toggle("active", v === view);
+    if (tab) tab.classList.toggle("active", v === view);
+  });
+
+  activeAgentType = view === "admin" ? "ecommerce" : view;
 
   if (view === "admin") {
     loadTickets();
+    loadAnalytics();
   }
+}
+
+function startCallTimer() {
+  if (callTimerInterval) clearInterval(callTimerInterval);
+  callTimerInterval = setInterval(() => {
+    callDurationSeconds++;
+    const mins = String(Math.floor(callDurationSeconds / 60)).padStart(2, '0');
+    const secs = String(callDurationSeconds % 60).padStart(2, '0');
+    const timerEl = document.getElementById("voice-call-timer");
+    if (timerEl) timerEl.innerText = `${mins}:${secs}`;
+  }, 1000);
 }
 
 function switchAdminTab(tab) {
@@ -89,7 +121,7 @@ async function handleSendMessage(event) {
     const response = await fetch("/api/chat/stream", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message, session_id: sessionId })
+      body: JSON.stringify({ message, session_id: sessionId, agent_type: "ecommerce" })
     });
 
     if (!response.ok) {
@@ -805,4 +837,308 @@ async function submitUploadDoc() {
   } catch (e) {
     alert("Upload error: " + e.message);
   }
+}
+
+// ==========================================
+// 1. HOTEL & HOSPITALITY CONTROLLER
+// ==========================================
+
+function sendHotelPrompt(promptText) {
+  const input = document.getElementById("hotel-user-input");
+  input.value = promptText;
+  document.getElementById("hotel-form").dispatchEvent(new Event("submit"));
+}
+
+async function handleSendHotelMessage(event) {
+  if (event) event.preventDefault();
+  const input = document.getElementById("hotel-user-input");
+  const message = input.value.trim();
+  if (!message) return;
+  input.value = "";
+
+  const container = document.getElementById("hotel-messages-container");
+  
+  // User bubble
+  const userRow = document.createElement("div");
+  userRow.className = "message-row user";
+  userRow.innerHTML = `<div class="msg-bubble">${escapeHtml(message)}</div>`;
+  container.appendChild(userRow);
+
+  // Assistant bubble placeholder
+  const botRow = document.createElement("div");
+  botRow.className = "message-row assistant";
+  botRow.innerHTML = `
+    <div class="agent-avatar" style="background: #fef3c7; color: #b45309;">🏨</div>
+    <div class="msg-bubble"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>
+  `;
+  container.appendChild(botRow);
+  container.scrollTop = container.scrollHeight;
+
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, session_id: "hotel_" + sessionId, agent_type: "hotel" })
+    });
+    const data = await res.json();
+    botRow.querySelector(".msg-bubble").innerHTML = escapeHtml(data.response);
+  } catch (err) {
+    botRow.querySelector(".msg-bubble").innerText = "Concierge connection error: " + err.message;
+  }
+  container.scrollTop = container.scrollHeight;
+}
+
+function clearHotelChat() {
+  document.getElementById("hotel-messages-container").innerHTML = `
+    <div class="message-row assistant">
+      <div class="agent-avatar" style="background: #fef3c7; color: #b45309;">🏨</div>
+      <div class="msg-bubble">Grand Apex Concierge desk cleared. How may I assist you with rooms, reservations, or resort facilities?</div>
+    </div>
+  `;
+}
+
+// ==========================================
+// 2. AI VOICE SUPPORT AGENT CONTROLLER (Phone Call)
+// ==========================================
+
+function toggleVoiceSpeechAudio() {
+  isVoiceTTSActive = !isVoiceTTSActive;
+  const btn = document.getElementById("voice-tts-toggle");
+  btn.innerText = isVoiceTTSActive ? "🔊 Voice Speech: ON" : "🔇 Voice Speech: OFF";
+  btn.style.color = isVoiceTTSActive ? "#38bdf8" : "#94a3b8";
+}
+
+function speakVoiceResponse(text) {
+  if (!isVoiceTTSActive || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  // Strip code blocks or emojis for natural speech
+  const cleanSpeech = text.replace(/[*#`_]/g, "").replace(/https?:\/\/\S+/g, "link").slice(0, 300);
+  const utterance = new SpeechSynthesisUtterance(cleanSpeech);
+  utterance.rate = 1.05;
+  utterance.pitch = 1.0;
+  window.speechSynthesis.speak(utterance);
+}
+
+function toggleMicrophoneSTT() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert("Speech recognition is not supported in this browser. Please type your message or use Google Chrome/Edge.");
+    return;
+  }
+
+  const micBtn = document.getElementById("voice-mic-btn");
+
+  if (!isRecordingMic) {
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        isRecordingMic = true;
+        micBtn.classList.add("speaking");
+        document.getElementById("voice-call-status").innerText = "🎙️ Listening to your spoken voice...";
+      };
+
+      recognition.onresult = (event) => {
+        const spokenTranscript = event.results[0][0].transcript;
+        document.getElementById("voice-spoken-input").value = spokenTranscript;
+        document.getElementById("voice-call-status").innerText = "Call Active &bull; Processing Spoken Audio";
+        handleSendVoiceSpokenMessage();
+      };
+
+      recognition.onerror = (e) => {
+        console.error("STT error:", e);
+        micBtn.classList.remove("speaking");
+        isRecordingMic = false;
+        document.getElementById("voice-call-status").innerText = "Call Active &bull; Mic Error (" + e.error + ")";
+      };
+
+      recognition.onend = () => {
+        isRecordingMic = false;
+        micBtn.classList.remove("speaking");
+      };
+
+      recognition.start();
+    } catch (e) {
+      alert("Microphone access error: " + e.message);
+    }
+  }
+}
+
+async function handleSendVoiceSpokenMessage(event) {
+  if (event) event.preventDefault();
+  const input = document.getElementById("voice-spoken-input");
+  const spokenText = input.value.trim();
+  if (!spokenText) return;
+  input.value = "";
+
+  const feed = document.getElementById("voice-transcript-feed");
+  feed.innerHTML += `<p style="color: #38bdf8; margin-top: 6px;"><strong>[Caller]:</strong> "${escapeHtml(spokenText)}"</p>`;
+  feed.scrollTop = feed.scrollHeight;
+
+  document.getElementById("voice-call-status").innerText = "Call Active &bull; Operator Speaking...";
+
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: spokenText, session_id: "voice_" + sessionId, agent_type: "voice" })
+    });
+    const data = await res.json();
+    const reply = data.response;
+    feed.innerHTML += `<p style="color: #f8fafc; margin-top: 6px;"><strong>[Operator]:</strong> "${escapeHtml(reply)}"</p>`;
+    feed.scrollTop = feed.scrollHeight;
+
+    // Trigger natural Text-to-Speech audio
+    speakVoiceResponse(reply);
+    document.getElementById("voice-call-status").innerText = "Call Active &bull; Telephone AI Operator Connected";
+  } catch (err) {
+    feed.innerHTML += `<p style="color: #ef4444; margin-top: 6px;">[Call Network Interrupted]: ${err.message}</p>`;
+  }
+}
+
+function triggerVoiceTransfer() {
+  const feed = document.getElementById("voice-transcript-feed");
+  feed.innerHTML += `<p style="color: #f59e0b; margin-top: 6px; font-weight: 600;">[System]: "Please hold while I transfer your call to Senior Telephone Support Supervisor..."</p>`;
+  speakVoiceResponse("Please hold while I transfer your call to Senior Telephone Support Supervisor.");
+  feed.scrollTop = feed.scrollHeight;
+}
+
+// ==========================================
+// 3. WHATSAPP BUSINESS CONTROLLER
+// ==========================================
+
+function sendWhatsAppPrompt(text) {
+  const input = document.getElementById("wa-user-input");
+  input.value = text;
+  document.getElementById("wa-form").dispatchEvent(new Event("submit"));
+}
+
+async function handleSendWhatsAppMessage(event) {
+  if (event) event.preventDefault();
+  const input = document.getElementById("wa-user-input");
+  const message = input.value.trim();
+  if (!message) return;
+  input.value = "";
+
+  const container = document.getElementById("wa-messages-container");
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  // User bubble
+  const userRow = document.createElement("div");
+  userRow.className = "wa-message-row user";
+  userRow.innerHTML = `
+    <div class="wa-bubble">
+      ${escapeHtml(message)}
+      <span class="wa-timestamp">${timeStr} <span style="color: #53bdeb;">✓✓</span></span>
+    </div>
+  `;
+  container.appendChild(userRow);
+
+  // Bot placeholder
+  const botRow = document.createElement("div");
+  botRow.className = "wa-message-row assistant";
+  botRow.innerHTML = `
+    <div class="wa-bubble">
+      <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
+      <span class="wa-timestamp">${timeStr}</span>
+    </div>
+  `;
+  container.appendChild(botRow);
+  container.scrollTop = container.scrollHeight;
+
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, session_id: "wa_" + sessionId, agent_type: "whatsapp" })
+    });
+    const data = await res.json();
+    botRow.querySelector(".wa-bubble").innerHTML = `
+      <div style="white-space: pre-wrap;">${escapeHtml(data.response)}</div>
+      <span class="wa-timestamp">${timeStr}</span>
+    `;
+  } catch (err) {
+    botRow.querySelector(".wa-bubble").innerText = "WhatsApp network error: " + err.message;
+  }
+  container.scrollTop = container.scrollHeight;
+}
+
+function clearWhatsAppChat() {
+  document.getElementById("wa-messages-container").innerHTML = `
+    <div class="wa-message-row assistant">
+      <div class="wa-bubble">
+        👋 Namaste! Welcome to ApexTech WhatsApp Support. Reply with 'catalog' or enter an inquiry to get started!
+        <span class="wa-timestamp">12:00 PM <span style="color: #53bdeb;">✓✓</span></span>
+      </div>
+    </div>
+  `;
+}
+
+// ==========================================
+// 4. SAAS DEVELOPER & TECHNICAL SUPPORT CONTROLLER
+// ==========================================
+
+function sendSaasPrompt(text) {
+  const input = document.getElementById("saas-user-input");
+  input.value = text;
+  document.getElementById("saas-form").dispatchEvent(new Event("submit"));
+}
+
+async function handleSendSaasMessage(event) {
+  if (event) event.preventDefault();
+  const input = document.getElementById("saas-user-input");
+  const message = input.value.trim();
+  if (!message) return;
+  input.value = "";
+
+  const container = document.getElementById("saas-messages-container");
+
+  // User bubble
+  const userRow = document.createElement("div");
+  userRow.className = "message-row user";
+  userRow.innerHTML = `<div class="msg-bubble">${escapeHtml(message)}</div>`;
+  container.appendChild(userRow);
+
+  // Assistant placeholder
+  const botRow = document.createElement("div");
+  botRow.className = "message-row assistant";
+  botRow.innerHTML = `
+    <div class="agent-avatar" style="background: #4f46e5; color: white;">Fin</div>
+    <div class="msg-bubble"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>
+  `;
+  container.appendChild(botRow);
+  container.scrollTop = container.scrollHeight;
+
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, session_id: "saas_" + sessionId, agent_type: "saas" })
+    });
+    const data = await res.json();
+    
+    // Parse markdown code blocks in SaaS response
+    let formattedText = escapeHtml(data.response);
+    formattedText = formattedText.replace(/```javascript([\s\S]*?)```/g, '<div class="saas-code-box"><code>$1</code></div>');
+    formattedText = formattedText.replace(/```python([\s\S]*?)```/g, '<div class="saas-code-box"><code>$1</code></div>');
+    formattedText = formattedText.replace(/```([\s\S]*?)```/g, '<div class="saas-code-box"><code>$1</code></div>');
+    formattedText = formattedText.replace(/`([^`]+)`/g, '<code style="background: #1e293b; color: #38bdf8; padding: 2px 4px; border-radius: 4px;">$1</code>');
+
+    botRow.querySelector(".msg-bubble").innerHTML = `<div style="white-space: pre-wrap;">${formattedText}</div>`;
+  } catch (err) {
+    botRow.querySelector(".msg-bubble").innerText = "SaaS DevPlatform error: " + err.message;
+  }
+  container.scrollTop = container.scrollHeight;
+}
+
+function clearSaasChat() {
+  document.getElementById("saas-messages-container").innerHTML = `
+    <div class="message-row assistant">
+      <div class="agent-avatar" style="background: #4f46e5; color: white;">Fin</div>
+      <div class="msg-bubble">Developer console cleared. Ask any API, webhook, or error diagnostic questions.</div>
+    </div>
+  `;
 }

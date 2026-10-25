@@ -18,7 +18,7 @@ class DemoProvider(BaseLLMProvider):
         # Check if an observation is already provided in the prompt
         if "observation:" in p_lower and "final answer:" not in p_lower:
             # Observation was provided, synthesize final answer
-            obs_match = re.search(r"observation:\s*(.*?)(?:\n\n|\Z)", prompt, re.DOTALL | re.IGNORECASE)
+            obs_match = re.search(r"observation:\s*(.*?)(?:\nThought:|\Z)", prompt, re.DOTALL | re.IGNORECASE)
             obs_text = obs_match.group(1).strip() if obs_match else "Information verified."
             
             return (
@@ -60,6 +60,79 @@ class DemoProvider(BaseLLMProvider):
                 f"According to company policy, I must promptly escalate the session.\n"
                 f"Action: escalate_to_human\n"
                 f'Action Input: {{"reason": "Customer requested live representative", "priority": "HIGH"}}'
+            )
+
+        # 1. HOTEL AGENT INTENTS
+        if any(w in t_lower for w in ["hotel", "room", "suite", "check in", "check-in", "checkout", "balcony", "resort", "king", "queen", "deluxe", "amenit", "towel", "stay"]):
+            if any(w in t_lower for w in ["book", "reserve", "reservation"]):
+                return (
+                    f"Thought: Guest wants to make a hotel reservation. I will call book_room_reservation.\n"
+                    f"Action: book_room_reservation\n"
+                    f'Action Input: {{"guest_name": "Valued Guest", "room_type": "Deluxe Ocean View King", "check_in": "2026-11-01", "check_out": "2026-11-04", "special_requests": "Ocean view balcony"}}'
+                )
+            elif any(w in t_lower for w in ["towel", "housekeeping", "amenit", "cleaning", "pillows", "shampoo"]):
+                return (
+                    f"Thought: Guest is requesting housekeeping amenities. I will dispatch request_housekeeping_amenity.\n"
+                    f"Action: request_housekeeping_amenity\n"
+                    f'Action Input: {{"room_or_res": "Room 304", "item": "{target_text[:60].replace(chr(34), chr(39))}"}}'
+                )
+            else:
+                return (
+                    f"Thought: Guest is checking hotel room availability. I will query check_room_availability.\n"
+                    f"Action: check_room_availability\n"
+                    f'Action Input: {{}}'
+                )
+
+        # 2. SAAS DEVELOPER INTENTS
+        if any(w in t_lower for w in ["err_", "error code", "status 429", "rate limit", "token", "oauth", "webhook", "api doc", "endpoint", "sdk"]):
+            err_match = re.search(r'\b(ERR_[A-Z0-9_]+)\b', target_text, re.IGNORECASE)
+            if err_match:
+                code = err_match.group(1).upper()
+                return (
+                    f"Thought: Developer reported error code {code}. I will diagnose it using diagnose_error_code.\n"
+                    f"Action: diagnose_error_code\n"
+                    f'Action Input: {{"error_code": "{code}"}}'
+                )
+            elif any(w in t_lower for w in ["429", "rate"]):
+                return (
+                    f"Thought: Developer hit rate limits. I will diagnose ERR_RATE_LIMIT_429.\n"
+                    f"Action: diagnose_error_code\n"
+                    f'Action Input: {{"error_code": "ERR_RATE_LIMIT_429"}}'
+                )
+            elif any(w in t_lower for w in ["webhook", "timeout"]):
+                return (
+                    f"Thought: Webhook timeout diagnostic needed. I will diagnose ERR_WEBHOOK_TIMEOUT.\n"
+                    f"Action: diagnose_error_code\n"
+                    f'Action Input: {{"error_code": "ERR_WEBHOOK_TIMEOUT"}}'
+                )
+            else:
+                return (
+                    f"Thought: Technical documentation inquiry. I will search API reference using search_api_docs.\n"
+                    f"Action: search_api_docs\n"
+                    f'Action Input: {{"query": "{target_text[:60].replace(chr(34), chr(39))}"}}'
+                )
+
+        # 3. WHATSAPP BUSINESS INTENTS
+        if any(w in t_lower for w in ["catalog", "whatsapp", "storefront", "products for sale", "buy headphone", "buy keyboard", "whatsapp order"]):
+            if any(w in t_lower for w in ["buy", "order"]):
+                return (
+                    f"Thought: Customer wants to order via WhatsApp. I will invoke whatsapp_quick_order.\n"
+                    f"Action: whatsapp_quick_order\n"
+                    f'Action Input: {{"product_name": "{target_text[:50].replace(chr(34), chr(39))}", "customer_phone": "+91 98765-43210"}}'
+                )
+            else:
+                return (
+                    f"Thought: Customer requested WhatsApp product catalog. I will invoke get_whatsapp_catalog.\n"
+                    f"Action: get_whatsapp_catalog\n"
+                    f'Action Input: {{}}'
+                )
+
+        # 4. VOICE TELEPHONE CALL INTENTS
+        if any(w in t_lower for w in ["call", "operator", "telephone", "phone", "transfer call"]):
+            return (
+                f"Thought: Telephone caller command received. I will invoke voice_call_action.\n"
+                f"Action: voice_call_action\n"
+                f'Action Input: {{"action": "transfer", "customer_phone": "Live Telephone Call"}}'
             )
 
         # Detect ticket creation intent
