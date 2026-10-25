@@ -30,10 +30,12 @@ function switchAdminTab(tab) {
   document.getElementById(`subtab-${tab}`).classList.add("active");
 
   document.getElementById("admin-content-tickets").style.display = tab === "tickets" ? "block" : "none";
+  document.getElementById("admin-content-analytics").style.display = tab === "analytics" ? "block" : "none";
   document.getElementById("admin-content-knowledge").style.display = tab === "knowledge" ? "block" : "none";
   document.getElementById("admin-content-orders").style.display = tab === "orders" ? "block" : "none";
 
   if (tab === "tickets") loadTickets();
+  if (tab === "analytics") loadAnalytics();
   if (tab === "knowledge") loadKnowledge();
   if (tab === "orders") loadOrders();
 }
@@ -114,7 +116,9 @@ async function handleSendMessage(event) {
         try {
           const event = JSON.parse(rawData);
 
-          if (event.type === "thought") {
+          if (event.type === "sentiment") {
+            updateSentimentBadge(event);
+          } else if (event.type === "thought") {
             thoughtContainer.style.display = "block";
             const thoughtDiv = document.createElement("div");
             thoughtDiv.className = "thought-box";
@@ -143,6 +147,12 @@ async function handleSendMessage(event) {
             }
             accumulatedText = event.content;
             answerContent.innerHTML = escapeHtml(accumulatedText);
+            
+            // Show CSAT card after successful resolution
+            setTimeout(() => {
+              const csat = document.getElementById("csat-card");
+              if (csat) csat.style.display = "block";
+            }, 1000);
           }
         } catch (e) {
           // Non-JSON SSE line
@@ -232,13 +242,18 @@ async function loadTickets() {
         <td>${escapeHtml(t.assigned_agent || 'Unassigned')}</td>
         <td style="font-size: 0.8rem; color: var(--text-muted);">${t.created_at ? t.created_at.slice(0, 16) : ''}</td>
         <td>
-          <select onchange="updateTicketStatus('${t.id}', this.value)" class="form-control" style="padding: 2px 6px; font-size: 0.775rem;">
-            <option value="" disabled selected>Update Status</option>
-            <option value="OPEN">Mark Open</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="ESCALATED">Escalate</option>
-            <option value="RESOLVED">Resolve</option>
-          </select>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <select onchange="updateTicketStatus('${t.id}', this.value)" class="form-control" style="padding: 2px 6px; font-size: 0.775rem;">
+              <option value="" disabled selected>Update Status</option>
+              <option value="OPEN">Mark Open</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="ESCALATED">Escalate</option>
+              <option value="RESOLVED">Resolve</option>
+            </select>
+            <button class="settings-btn" style="padding: 2px 6px; font-size: 0.75rem; color: #4f46e5; font-weight: 600;" onclick="openInspectTicketModal('${t.id}')">
+              💬 Inspect & Takeover
+            </button>
+          </div>
         </td>
       </tr>
     `).join("");
@@ -543,4 +558,251 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+// ==========================================
+// ADVANCED FEATURES: Sentiment, CSAT, Analytics, Takeover & File Upload
+// ==========================================
+
+let currentInspectedTicketId = null;
+let currentCsatRating = 5;
+
+// 1. Live Sentiment Meter
+function updateSentimentBadge(sentiment) {
+  const badge = document.getElementById("customer-sentiment-badge");
+  const text = document.getElementById("sentiment-text");
+  if (!badge || !text) return;
+
+  badge.className = "sentiment-chip";
+  let icon = "😐";
+
+  if (sentiment.label === "Positive") {
+    badge.classList.add("sentiment-positive");
+    icon = "😊";
+  } else if (sentiment.label === "Frustrated") {
+    badge.classList.add("sentiment-frustrated");
+    icon = "😡";
+  } else if (sentiment.label === "Dissatisfied") {
+    badge.classList.add("sentiment-dissatisfied");
+    icon = "😟";
+  } else {
+    badge.classList.add("sentiment-neutral");
+    icon = "😐";
+  }
+
+  text.innerText = `Mood: ${sentiment.label} (${sentiment.score > 0 ? '+' : ''}${sentiment.score})`;
+  badge.querySelector("span:first-child").innerText = icon;
+}
+
+// 2. CSAT Rating
+function rateCsat(rating) {
+  currentCsatRating = rating;
+  const stars = document.querySelectorAll("#csat-star-group .star-btn");
+  stars.forEach((s, idx) => {
+    s.classList.toggle("active", idx < rating);
+  });
+}
+
+function dismissCsat() {
+  const card = document.getElementById("csat-card");
+  if (card) card.style.display = "none";
+}
+
+async function submitCsatFeedback() {
+  const feedback = document.getElementById("csat-feedback-input").value.trim();
+  try {
+    await fetch("/api/chat/csat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: sessionId, rating: currentCsatRating, feedback })
+    });
+    const card = document.getElementById("csat-card");
+    if (card) {
+      card.innerHTML = `<span style="color: #16a34a; font-size: 0.875rem; font-weight: 600;">🎉 Thank you for your feedback! Rating submitted.</span>`;
+      setTimeout(() => dismissCsat(), 3000);
+    }
+  } catch (e) {
+    console.error("CSAT error:", e);
+  }
+}
+
+// 3. Analytics Dashboard
+async function loadAnalytics() {
+  try {
+    const res = await fetch("/api/analytics");
+    const data = await res.json();
+
+    document.getElementById("analytics-csat-score").innerText = data.avg_csat.toFixed(1);
+    document.getElementById("analytics-csat-count").innerText = `(${data.total_ratings} ratings)`;
+    document.getElementById("analytics-csat-bar").style.width = `${(data.avg_csat / 5) * 100}%`;
+
+    document.getElementById("analytics-resolution-rate").innerText = `${data.resolution_rate}%`;
+    document.getElementById("analytics-res-bar").style.width = `${data.resolution_rate}%`;
+
+    // Sentiment breakdown
+    const totalSent = Object.values(data.sentiment_counts).reduce((a, b) => a + b, 0) || 1;
+    const posPct = Math.round((data.sentiment_counts["Positive"] / totalSent) * 100);
+    const neuPct = Math.round((data.sentiment_counts["Neutral"] / totalSent) * 100);
+    const fruPct = Math.round(((data.sentiment_counts["Frustrated"] + data.sentiment_counts["Dissatisfied"]) / totalSent) * 100);
+
+    document.getElementById("sent-pos-val").innerText = `${posPct}%`;
+    document.getElementById("sent-pos-bar").style.width = `${posPct}%`;
+    document.getElementById("sent-neu-val").innerText = `${neuPct}%`;
+    document.getElementById("sent-neu-bar").style.width = `${neuPct}%`;
+    document.getElementById("sent-fru-val").innerText = `${fruPct}%`;
+    document.getElementById("sent-fru-bar").style.width = `${fruPct}%`;
+
+    // Tool counts
+    document.getElementById("tool-order-count").innerText = data.tool_counts["check_order_status"] || 0;
+    document.getElementById("tool-kb-count").innerText = data.tool_counts["search_knowledge_base"] || 0;
+    document.getElementById("tool-refund-count").innerText = data.tool_counts["process_refund_return"] || 0;
+    document.getElementById("tool-esc-count").innerText = data.tool_counts["escalate_to_human"] || 0;
+
+  } catch (e) {
+    console.error("Analytics load error:", e);
+  }
+}
+
+// 4. Ticket Inspection, AI Case Summary & Live Takeover
+async function openInspectTicketModal(ticketId) {
+  currentInspectedTicketId = ticketId;
+  const modal = document.getElementById("inspect-ticket-modal");
+  modal.classList.add("open");
+
+  document.getElementById("inspect-modal-title").innerText = `Ticket #${ticketId}`;
+  document.getElementById("inspect-modal-subtitle").innerText = "Loading conversation & status...";
+  document.getElementById("ai-summary-content").innerText = "Click 'Generate AI Summary' to analyze this case with LLM.";
+
+  try {
+    const res = await fetch(`/api/tickets`);
+    const data = await res.json();
+    const ticket = (data.tickets || []).find(t => t.id === ticketId);
+    if (ticket) {
+      document.getElementById("inspect-modal-title").innerText = `${ticket.subject} (#${ticket.id})`;
+      document.getElementById("inspect-modal-subtitle").innerText = `Status: ${ticket.status} | Priority: ${ticket.priority} | Customer: ${ticket.customer_email || 'guest'}`;
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function closeInspectTicketModal() {
+  document.getElementById("inspect-ticket-modal").classList.remove("open");
+  currentInspectedTicketId = null;
+}
+
+async function fetchAiTicketSummary() {
+  if (!currentInspectedTicketId) return;
+  const summaryBox = document.getElementById("ai-summary-content");
+  summaryBox.innerHTML = `<em>Generating AI case diagnosis and draft reply...</em>`;
+
+  try {
+    const res = await fetch(`/api/tickets/${currentInspectedTicketId}/ai-summary`, { method: "POST" });
+    const data = await res.json();
+    summaryBox.innerText = data.ai_summary || "No summary available.";
+  } catch (e) {
+    summaryBox.innerText = "Error generating AI summary: " + e.message;
+  }
+}
+
+async function toggleTakeoverLive() {
+  try {
+    const res = await fetch("/api/chat/takeover", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: sessionId, takeover: true, agent_name: "Sarah M. (Live Specialist)" })
+    });
+    const data = await res.json();
+    document.getElementById("takeover-status-box").innerHTML = `
+      <span style="color: #16a34a;">🟢 <strong>Live Human Takeover Active:</strong> Sarah M. is connected.</span>
+      <button class="settings-btn" style="font-size: 0.75rem;" onclick="releaseTakeover()">Release to AI</button>
+    `;
+    alert("You have taken over this session. The customer was notified that a live human specialist has joined the chat!");
+  } catch (e) {
+    alert("Takeover error: " + e.message);
+  }
+}
+
+async function releaseTakeover() {
+  try {
+    await fetch("/api/chat/takeover", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: sessionId, takeover: false })
+    });
+    document.getElementById("takeover-status-box").innerHTML = `
+      <span>🤖 Active Responder: <strong>AI Support Agent</strong></span>
+      <button class="btn-primary" style="font-size: 0.75rem; padding: 0.35rem 0.75rem;" onclick="toggleTakeoverLive()">
+        💬 Take Over Live as Human Agent
+      </button>
+    `;
+    alert("Session released back to autonomous AI Agent.");
+  } catch (e) {
+    alert("Release error: " + e.message);
+  }
+}
+
+async function submitHumanReply() {
+  const input = document.getElementById("human-reply-input");
+  const message = input.value.trim();
+  if (!message) return;
+
+  try {
+    await fetch("/api/chat/human-reply", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: sessionId, message, agent_name: "Sarah M. (Human Specialist)" })
+    });
+    input.value = "";
+    alert("Human message sent directly to customer's live chat window!");
+  } catch (e) {
+    alert("Error sending message: " + e.message);
+  }
+}
+
+async function resolveCurrentInspectedTicket() {
+  if (!currentInspectedTicketId) return;
+  await updateTicketStatus(currentInspectedTicketId, "RESOLVED");
+  closeInspectTicketModal();
+}
+
+// 5. Documentation File Upload
+function openUploadDocModal() {
+  document.getElementById("upload-doc-modal").classList.add("open");
+}
+function closeUploadDocModal() {
+  document.getElementById("upload-doc-modal").classList.remove("open");
+}
+
+async function submitUploadDoc() {
+  const fileInput = document.getElementById("upload-doc-file");
+  const title = document.getElementById("upload-doc-title").value.trim();
+  const category = document.getElementById("upload-doc-category").value.trim();
+
+  if (!fileInput.files.length) {
+    alert("Please select a file to upload.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", fileInput.files[0]);
+  if (title) formData.append("title", title);
+  if (category) formData.append("category", category);
+
+  try {
+    const res = await fetch("/api/knowledge/upload", {
+      method: "POST",
+      body: formData
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert("Success! " + data.message);
+      closeUploadDocModal();
+      loadKnowledge();
+    } else {
+      alert("Upload failed: " + data.error);
+    }
+  } catch (e) {
+    alert("Upload error: " + e.message);
+  }
 }

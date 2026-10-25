@@ -70,3 +70,85 @@ def clear_session(session_id):
     """Clears messages for a session."""
     execute_db("DELETE FROM chat_messages WHERE session_id = ?", (session_id,))
     return jsonify({"success": True, "message": f"Session {session_id} cleared."})
+
+@chat_bp.route("/api/chat/csat", methods=["POST"])
+def submit_csat():
+    """Records customer satisfaction rating (1 to 5 stars) and feedback."""
+    data = request.get_json() or {}
+    session_id = data.get("session_id", "").strip()
+    rating = int(data.get("rating", 5))
+    feedback = data.get("feedback", "").strip()
+
+    if not session_id:
+        return jsonify({"error": "Session ID required"}), 400
+
+    execute_db(
+        "UPDATE chat_sessions SET csat_rating = ?, csat_feedback = ?, updated_at = CURRENT_TIMESTAMP WHERE session_id = ?",
+        (rating, feedback, session_id)
+    )
+    return jsonify({"success": True, "message": "Thank you for your feedback!"})
+
+@chat_bp.route("/api/chat/takeover", methods=["POST"])
+def toggle_human_takeover():
+    """Allows a human support specialist in the CRM to take over a session."""
+    data = request.get_json() or {}
+    session_id = data.get("session_id", "").strip()
+    is_takeover = int(bool(data.get("takeover", True)))
+    agent_name = data.get("agent_name", "Sarah M. (Live Specialist)").strip()
+
+    if not session_id:
+        return jsonify({"error": "Session ID required"}), 400
+
+    execute_db(
+        "INSERT OR IGNORE INTO chat_sessions (session_id, customer_id, customer_name) VALUES (?, 'guest', 'Valued Customer')",
+        (session_id,)
+    )
+
+    execute_db(
+        "UPDATE chat_sessions SET is_human_takeover = ?, active_human_agent = ?, updated_at = CURRENT_TIMESTAMP WHERE session_id = ?",
+        (is_takeover, agent_name if is_takeover else None, session_id)
+    )
+
+    # Insert a system transition message in chat
+    transition_msg = f"🔔 {agent_name} has joined the conversation as your live support representative." if is_takeover else "🤖 Human representative has concluded the live session. AI assistant is back online."
+    execute_db(
+        "INSERT INTO chat_messages (session_id, role, sender_name, content) VALUES (?, 'assistant', 'System Notice', ?)",
+        (session_id, transition_msg)
+    )
+
+    return jsonify({"success": True, "is_human_takeover": is_takeover, "agent_name": agent_name})
+
+@chat_bp.route("/api/chat/human-reply", methods=["POST"])
+def send_human_reply():
+    """Allows a human agent to send a message directly to the customer."""
+    data = request.get_json() or {}
+    session_id = data.get("session_id", "").strip()
+    message = data.get("message", "").strip()
+    agent_name = data.get("agent_name", "Human Support Specialist").strip()
+
+    if not session_id or not message:
+        return jsonify({"error": "Session ID and message required"}), 400
+
+    execute_db(
+        "INSERT OR IGNORE INTO chat_sessions (session_id, customer_id, customer_name) VALUES (?, 'guest', 'Valued Customer')",
+        (session_id,)
+    )
+
+    execute_db(
+        "INSERT INTO chat_messages (session_id, role, sender_name, content) VALUES (?, 'assistant', ?, ?)",
+        (session_id, agent_name, message)
+    )
+
+    return jsonify({"success": True, "message": message, "sender": agent_name})
+
+@chat_bp.route("/api/chat/session/<session_id>/status", methods=["GET"])
+def get_session_status(session_id):
+    """Retrieves session metadata, takeover status, and sentiment."""
+    session = query_db(
+        "SELECT session_id, customer_name, sentiment_score, sentiment_label, csat_rating, is_human_takeover, active_human_agent FROM chat_sessions WHERE session_id = ?",
+        (session_id,),
+        one=True
+    )
+    if not session:
+        return jsonify({"session_id": session_id, "is_human_takeover": 0, "sentiment_label": "Neutral"})
+    return jsonify(session)

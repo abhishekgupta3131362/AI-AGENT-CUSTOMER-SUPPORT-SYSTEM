@@ -1,6 +1,7 @@
 import uuid
 from flask import Blueprint, request, jsonify
 from backend.database.db import query_db, execute_db
+from backend.llm.factory import LLMFactory
 
 ticket_bp = Blueprint("tickets", __name__)
 
@@ -79,3 +80,38 @@ def delete_ticket(ticket_id):
     """Deletes a ticket."""
     execute_db("DELETE FROM tickets WHERE id = ?", (ticket_id,))
     return jsonify({"success": True, "message": f"Ticket {ticket_id} deleted."})
+
+@ticket_bp.route("/api/tickets/<ticket_id>/ai-summary", methods=["POST"])
+def generate_ticket_summary(ticket_id):
+    """Uses LLM to summarize an escalated ticket and draft a human agent reply."""
+    ticket = query_db("SELECT * FROM tickets WHERE id = ?", (ticket_id,), one=True)
+    if not ticket:
+        return jsonify({"error": f"Ticket {ticket_id} not found"}), 404
+
+    # Fetch recent messages related to session or guest
+    messages = query_db("SELECT role, content FROM chat_messages ORDER BY id DESC LIMIT 8")
+    convo = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in reversed(messages)])
+
+    prompt = f"""You are an expert customer support supervisor.
+Analyze this support ticket and recent conversation context:
+Ticket ID: {ticket['id']}
+Subject: {ticket['subject']}
+Description: {ticket['description']}
+Priority: {ticket['priority']}
+
+Recent Conversation:
+{convo}
+
+Please provide:
+1. Executive Issue Summary (2 sentences)
+2. Root Cause & Customer Sentiment
+3. Recommended Human Agent Resolution Strategy
+4. Draft Empathetic Customer Response
+"""
+    llm = LLMFactory.get_provider()
+    summary_text = llm.generate(prompt, system_prompt="You are an enterprise support operations advisor. Provide clear, professional actionable summaries.")
+    
+    return jsonify({
+        "ticket_id": ticket_id,
+        "ai_summary": summary_text
+    })

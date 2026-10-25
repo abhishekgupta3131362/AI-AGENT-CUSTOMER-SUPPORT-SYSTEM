@@ -3,12 +3,14 @@ import json
 from typing import Generator, Dict, Any, List, Optional
 from backend.agent.prompts import SYSTEM_PROMPT
 from backend.agent.tools import SupportTools
+from backend.agent.sentiment import SentimentAnalyzer
 from backend.llm.factory import LLMFactory
 from backend.database.db import execute_db, query_db
 
 class SupportAgent:
     def __init__(self):
         self.tools = SupportTools()
+        self.sentiment_analyzer = SentimentAnalyzer()
 
     def _execute_tool(self, action_name: str, action_input: Dict[str, Any]) -> str:
         name = action_name.strip().lower()
@@ -86,16 +88,45 @@ class SupportAgent:
             (session_id,)
         )
 
+        # 1. Analyze Customer Sentiment & Frustration
+        sentiment = self.sentiment_analyzer.analyze(message)
+        yield {
+            "type": "sentiment",
+            "score": sentiment["score"],
+            "label": sentiment["label"],
+            "is_frustrated": sentiment["is_frustrated"],
+            "is_urgent": sentiment["is_urgent"]
+        }
+
+        # Update session sentiment
+        execute_db(
+            "UPDATE chat_sessions SET sentiment_score = ?, sentiment_label = ?, updated_at = CURRENT_TIMESTAMP WHERE session_id = ?",
+            (sentiment["score"], sentiment["label"], session_id)
+        )
+
         # Save user message to database
         execute_db(
-            "INSERT INTO chat_messages (session_id, role, content) VALUES (?, 'user', ?)",
-            (session_id, message)
+            "INSERT INTO chat_messages (session_id, role, content, sentiment_score) VALUES (?, 'user', ?, ?)",
+            (session_id, message, sentiment["score"])
         )
+
+        # Check for Human Takeover
+        session_row = query_db("SELECT is_human_takeover, active_human_agent FROM chat_sessions WHERE session_id = ?", (session_id,), one=True)
+        if session_row and session_row["is_human_takeover"]:
+            agent_name = session_row["active_human_agent"] or "Human Support Specialist"
+            yield {
+                "type": "final_answer",
+                "content": f"[{agent_name} is actively connected to this chat]. Your message has been routed to the representative."
+            }
+            return
 
         llm = LLMFactory.get_provider()
         
         # Build prompt with tool definitions and history
         prompt_context = f"{self.tools.get_tool_definitions()}\n\n"
+        if sentiment["is_frustrated"] or sentiment["is_urgent"]:
+            prompt_context += f"NOTE: High customer frustration or urgency detected ({sentiment['label']}, score: {sentiment['score']}). Prioritize empathy, apologize for the inconvenience, and invoke escalate_to_human if appropriate.\n\n"
+
         if chat_history:
             prompt_context += "Previous Conversation:\n"
             for turn in chat_history[-4:]:

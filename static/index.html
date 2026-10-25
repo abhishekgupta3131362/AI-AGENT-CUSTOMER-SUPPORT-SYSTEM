@@ -55,7 +55,10 @@
                 </p>
               </div>
             </div>
-            <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <div id="customer-sentiment-badge" class="sentiment-chip sentiment-neutral" title="Live Customer Sentiment & Frustration Meter">
+                <span>😐</span> <span id="sentiment-text">Mood: Neutral</span>
+              </div>
               <button class="settings-btn" style="padding: 0.35rem 0.65rem; font-size: 0.8rem;" onclick="clearCurrentChat()">
                 🗑️ Clear Chat
               </button>
@@ -91,6 +94,28 @@
             <button class="quick-chip" onclick="sendQuickPrompt('I want to speak with a human support agent')">
               👤 Speak with Human Agent
             </button>
+            <button class="quick-chip" style="color: #b91c1c; border-color: #fca5a5;" onclick="sendQuickPrompt('THIS IS UNACCEPTABLE MY ORDER IS BROKEN AND YOUR SERVICE SUCKS I WANT A REFUND NOW!')">
+              😡 Test Frustration & Auto-Escalate
+            </button>
+          </div>
+
+          <!-- CSAT Rating Card (Appears after resolution) -->
+          <div id="csat-card" class="csat-container" style="display: none; margin: 0.5rem 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong style="font-size: 0.875rem; color: #1e1b4b;">⭐ How was your support experience?</strong>
+              <button class="settings-btn" style="padding: 2px 6px; font-size: 0.75rem;" onclick="dismissCsat()">✕</button>
+            </div>
+            <div class="csat-stars" id="csat-star-group">
+              <button class="star-btn active" onclick="rateCsat(1)">⭐</button>
+              <button class="star-btn active" onclick="rateCsat(2)">⭐</button>
+              <button class="star-btn active" onclick="rateCsat(3)">⭐</button>
+              <button class="star-btn active" onclick="rateCsat(4)">⭐</button>
+              <button class="star-btn active" onclick="rateCsat(5)">⭐</button>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="text" id="csat-feedback-input" class="form-control" style="font-size: 0.8rem; padding: 0.4rem 0.6rem;" placeholder="Optional feedback...">
+              <button class="btn-primary" style="font-size: 0.775rem; padding: 0.4rem 0.8rem;" onclick="submitCsatFeedback()">Submit</button>
+            </div>
           </div>
 
           <!-- Input Bar -->
@@ -185,6 +210,9 @@
         <button class="admin-subtab active" id="subtab-tickets" onclick="switchAdminTab('tickets')">
           📋 Support Ticket Queue
         </button>
+        <button class="admin-subtab" id="subtab-analytics" onclick="switchAdminTab('analytics')">
+          📈 Analytics & CSAT
+        </button>
         <button class="admin-subtab" id="subtab-knowledge" onclick="switchAdminTab('knowledge')">
           📚 Knowledge Base (RAG)
         </button>
@@ -229,6 +257,85 @@
         </div>
       </div>
 
+      <!-- Tab Content: Analytics & CSAT -->
+      <div id="admin-content-analytics" style="display: none;">
+        <h2 style="font-size: 1.15rem; color: #1e293b; margin-bottom: 1rem;">Customer Support Performance & Sentiment Analytics</h2>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+          
+          <div class="side-card">
+            <h3>⭐ Customer Satisfaction (CSAT)</h3>
+            <div style="display: flex; align-items: baseline; gap: 0.75rem; margin: 0.5rem 0;">
+              <span style="font-size: 2.25rem; font-weight: 800; color: #4f46e5;" id="analytics-csat-score">4.8</span>
+              <span style="color: var(--text-muted); font-size: 0.9rem;">/ 5.0 Rating</span>
+              <span style="font-size: 0.8rem; color: #16a34a; font-weight: 600;" id="analytics-csat-count">(12 reviews)</span>
+            </div>
+            <div class="stat-bar-container">
+              <div class="stat-bar-fill success" id="analytics-csat-bar" style="width: 96%;"></div>
+            </div>
+
+            <h3 style="margin-top: 1.25rem;">✅ Issue Resolution Rate</h3>
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-top: 0.25rem;">
+              <span>Automated / Resolved:</span>
+              <strong id="analytics-resolution-rate">85%</strong>
+            </div>
+            <div class="stat-bar-container">
+              <div class="stat-bar-fill" id="analytics-res-bar" style="width: 85%;"></div>
+            </div>
+          </div>
+
+          <div class="side-card">
+            <h3>😊 Customer Sentiment Breakdown</h3>
+            <div style="margin-top: 0.5rem; font-size: 0.825rem;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                <span>Positive / Delighted:</span>
+                <strong id="sent-pos-val">60%</strong>
+              </div>
+              <div class="stat-bar-container"><div class="stat-bar-fill success" id="sent-pos-bar" style="width: 60%;"></div></div>
+
+              <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                <span>Neutral:</span>
+                <strong id="sent-neu-val">25%</strong>
+              </div>
+              <div class="stat-bar-container"><div class="stat-bar-fill" id="sent-neu-bar" style="width: 25%;"></div></div>
+
+              <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                <span>Frustrated / High Urgency:</span>
+                <strong id="sent-fru-val" style="color: #dc2626;">15%</strong>
+              </div>
+              <div class="stat-bar-container"><div class="stat-bar-fill danger" id="sent-fru-bar" style="width: 15%;"></div></div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="side-card">
+          <h3>⚡ AI ReAct Tool Usage Frequency</h3>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+            Breakdown of automated tool invocations executed by the Support Agent:
+          </p>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+            <div style="background: #f8fafc; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border);">
+              <small style="color: var(--text-muted);">check_order_status</small>
+              <div style="font-size: 1.4rem; font-weight: 700; color: #0284c7;" id="tool-order-count">0</div>
+            </div>
+            <div style="background: #f8fafc; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border);">
+              <small style="color: var(--text-muted);">search_knowledge_base</small>
+              <div style="font-size: 1.4rem; font-weight: 700; color: #4f46e5;" id="tool-kb-count">0</div>
+            </div>
+            <div style="background: #f8fafc; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border);">
+              <small style="color: var(--text-muted);">process_refund_return</small>
+              <div style="font-size: 1.4rem; font-weight: 700; color: #16a34a;" id="tool-refund-count">0</div>
+            </div>
+            <div style="background: #f8fafc; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border);">
+              <small style="color: var(--text-muted);">escalate_to_human</small>
+              <div style="font-size: 1.4rem; font-weight: 700; color: #dc2626;" id="tool-esc-count">0</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
       <!-- Tab Content: Knowledge Base RAG -->
       <div id="admin-content-knowledge" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
@@ -238,7 +345,10 @@
               Indexed articles and vector embeddings queried by the AI Agent ReAct tools.
             </p>
           </div>
-          <button class="btn-primary" onclick="openNewDocModal()">+ Add Knowledge Article</button>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn-secondary" onclick="openUploadDocModal()">📁 Upload File (.txt, .md)</button>
+            <button class="btn-primary" onclick="openNewDocModal()">+ Add Knowledge Article</button>
+          </div>
         </div>
 
         <!-- Live Vector Search Tester -->
@@ -403,6 +513,90 @@
       <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
         <button class="btn-secondary" onclick="closeNewTicketModal()">Cancel</button>
         <button class="btn-primary" onclick="submitNewTicket()">Create Ticket</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Upload Knowledge Base File -->
+  <div class="modal-overlay" id="upload-doc-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="font-size: 1.1rem; color: #0f172a;">📁 Upload Documentation to RAG Index</h3>
+        <button class="settings-btn" onclick="closeUploadDocModal()">✕</button>
+      </div>
+
+      <div class="form-group">
+        <label for="upload-doc-title">Document Title</label>
+        <input type="text" id="upload-doc-title" class="form-control" placeholder="e.g. 2026 Customer Service Manual">
+      </div>
+
+      <div class="form-group">
+        <label for="upload-doc-category">Category</label>
+        <input type="text" id="upload-doc-category" class="form-control" placeholder="e.g. Policies, Guides, Hardware">
+      </div>
+
+      <div class="form-group">
+        <label for="upload-doc-file">Select File (.txt, .md, .json)</label>
+        <input type="file" id="upload-doc-file" class="form-control" accept=".txt,.md,.json,.csv">
+        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+          The system will automatically chunk and compute semantic vector embeddings.
+        </p>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+        <button class="btn-secondary" onclick="closeUploadDocModal()">Cancel</button>
+        <button class="btn-primary" onclick="submitUploadDoc()">Upload & Vector Index</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Inspect Ticket & Human Agent Takeover -->
+  <div class="modal-overlay" id="inspect-ticket-modal">
+    <div class="modal-content modal-large">
+      <div class="modal-header">
+        <div>
+          <h3 style="font-size: 1.15rem; color: #0f172a;" id="inspect-modal-title">Ticket Details</h3>
+          <p style="font-size: 0.775rem; color: var(--text-muted);" id="inspect-modal-subtitle">Ticket #TCK-XXXX</p>
+        </div>
+        <button class="settings-btn" onclick="closeInspectTicketModal()">✕</button>
+      </div>
+
+      <div id="takeover-status-box" class="takeover-banner">
+        <span>🤖 Active Responder: <strong>AI Support Agent</strong></span>
+        <button class="btn-primary" style="font-size: 0.75rem; padding: 0.35rem 0.75rem;" onclick="toggleTakeoverLive()">
+          💬 Take Over Live as Human Agent
+        </button>
+      </div>
+
+      <!-- AI Summary & Strategy Panel -->
+      <div class="side-card" style="margin-bottom: 1rem; background: #faf5ff; border-color: #e9d5ff;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <h4 style="font-size: 0.9rem; color: #6b21a8;">🤖 AI Assistant Case Summary & Draft Reply</h4>
+          <button class="btn-secondary" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;" onclick="fetchAiTicketSummary()">
+            Generate AI Summary
+          </button>
+        </div>
+        <div id="ai-summary-content" style="font-size: 0.8rem; color: #4c1d95; line-height: 1.5; white-space: pre-wrap;">
+          Click "Generate AI Summary" to have the LLM analyze this case, diagnose the customer's sentiment, and draft a recommended response.
+        </div>
+      </div>
+
+      <!-- Human Agent Direct Message Input -->
+      <div class="form-group" style="margin-top: 1rem;">
+        <label for="human-reply-input">Send Direct Message to Customer (Live Chat)</label>
+        <div style="display: flex; gap: 0.5rem;">
+          <input type="text" id="human-reply-input" class="form-control" placeholder="Type a message as a Human Support Specialist...">
+          <button class="btn-primary" onclick="submitHumanReply()">Send Message</button>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.25rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+        <div>
+          <button class="btn-secondary" style="color: #16a34a; font-size: 0.8rem;" onclick="resolveCurrentInspectedTicket()">
+            ✅ Mark Resolved
+          </button>
+        </div>
+        <button class="btn-secondary" onclick="closeInspectTicketModal()">Close</button>
       </div>
     </div>
   </div>

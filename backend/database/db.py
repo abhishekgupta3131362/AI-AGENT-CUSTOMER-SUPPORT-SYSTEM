@@ -71,6 +71,12 @@ def init_db():
             session_id TEXT PRIMARY KEY,
             customer_id TEXT,
             customer_name TEXT,
+            sentiment_score REAL DEFAULT 0.0,
+            sentiment_label TEXT DEFAULT 'Neutral',
+            csat_rating INTEGER,
+            csat_feedback TEXT,
+            is_human_takeover INTEGER DEFAULT 0,
+            active_human_agent TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -82,8 +88,10 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             session_id TEXT NOT NULL,
             role TEXT NOT NULL,
+            sender_name TEXT,
             content TEXT NOT NULL,
             tool_calls TEXT,
+            sentiment_score REAL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (session_id) REFERENCES chat_sessions(session_id)
         )
@@ -101,6 +109,22 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    
+    # Safe column additions for existing databases
+    for col_def in [
+        ("chat_sessions", "sentiment_score REAL DEFAULT 0.0"),
+        ("chat_sessions", "sentiment_label TEXT DEFAULT 'Neutral'"),
+        ("chat_sessions", "csat_rating INTEGER"),
+        ("chat_sessions", "csat_feedback TEXT"),
+        ("chat_sessions", "is_human_takeover INTEGER DEFAULT 0"),
+        ("chat_sessions", "active_human_agent TEXT"),
+        ("chat_messages", "sender_name TEXT"),
+        ("chat_messages", "sentiment_score REAL")
+    ]:
+        try:
+            cursor.execute(f"ALTER TABLE {col_def[0]} ADD COLUMN {col_def[1]}")
+        except Exception:
+            pass # Column already exists
     
     conn.commit()
     conn.close()

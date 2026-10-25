@@ -43,6 +43,33 @@ def delete_document(doc_id):
     vector_store.delete_document(doc_id)
     return jsonify({"success": True, "message": f"Document {doc_id} deleted."})
 
+@knowledge_bp.route("/api/knowledge/upload", methods=["POST"])
+def upload_document():
+    """Uploads and indexes a text or markdown documentation file into the RAG vector store."""
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    uploaded_file = request.files["file"]
+    if uploaded_file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+
+    title = request.form.get("title", uploaded_file.filename).strip()
+    category = request.form.get("category", "Uploaded Docs").strip()
+
+    try:
+        content = uploaded_file.read().decode("utf-8")
+        if not content.strip():
+            return jsonify({"error": "Uploaded file is empty"}), 400
+
+        doc_id = vector_store.add_document(title=title, category=category, content=content)
+        return jsonify({
+            "success": True,
+            "doc_id": doc_id,
+            "message": f"Successfully indexed '{uploaded_file.filename}' into RAG vector store."
+        }), 201
+    except Exception as e:
+        return jsonify({"error": f"Failed to process file: {str(e)}"}), 500
+
 @knowledge_bp.route("/api/knowledge/reindex", methods=["POST"])
 def reindex_knowledge():
     """Reindexes all documents."""
