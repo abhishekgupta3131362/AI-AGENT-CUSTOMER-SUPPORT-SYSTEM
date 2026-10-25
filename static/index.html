@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ApexTech AI Support Agent | Intelligent Customer Support</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="brand">
+      <div class="brand-icon">⚡</div>
+      <span>ApexTech Support AI</span>
+    </div>
+
+    <div class="nav-tabs">
+      <button class="nav-tab active" id="tab-chat" onclick="switchView('chat')">
+        💬 Customer Support
+      </button>
+      <button class="nav-tab" id="tab-admin" onclick="switchView('admin')">
+        📊 Agent & Admin CRM
+      </button>
+    </div>
+
+    <div class="nav-right">
+      <div class="provider-pill" id="active-provider-badge">
+        <span class="agent-status-dot"></span>
+        <span id="provider-name-display">Demo Engine</span>
+      </div>
+      <button class="settings-btn" onclick="openSettingsModal()">
+        ⚙️ Settings
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container">
+
+    <!-- VIEW 1: CUSTOMER CHAT VIEW -->
+    <section id="view-chat" class="view-section active">
+      <div class="chat-layout">
+        
+        <!-- Chat Area -->
+        <div class="chat-card">
+          <div class="chat-header">
+            <div class="chat-header-info">
+              <div class="agent-avatar">AI</div>
+              <div>
+                <strong style="font-size: 0.95rem;">Apex Support Specialist</strong>
+                <p style="font-size: 0.775rem; color: var(--text-muted);">
+                  <span class="agent-status-dot"></span> Online &bull; Powered by ReAct & RAG
+                </p>
+              </div>
+            </div>
+            <div>
+              <button class="settings-btn" style="padding: 0.35rem 0.65rem; font-size: 0.8rem;" onclick="clearCurrentChat()">
+                🗑️ Clear Chat
+              </button>
+            </div>
+          </div>
+
+          <!-- Message History -->
+          <div class="chat-messages" id="chat-messages-container">
+            <!-- Welcome Message -->
+            <div class="message-row assistant">
+              <div class="agent-avatar">AI</div>
+              <div class="msg-bubble">
+                Hello! Welcome to ApexTech Support. I am your autonomous AI assistant. 
+                I can help you track orders, verify our 30-day return policy, file support tickets, or connect you directly with a human specialist. How can I help you today?
+              </div>
+            </div>
+          </div>
+
+          <!-- Suggested Quick Prompts -->
+          <div class="quick-prompts">
+            <button class="quick-chip" onclick="sendQuickPrompt('Where is my order ORD-1002?')">
+              📦 Track Order #ORD-1002
+            </button>
+            <button class="quick-chip" onclick="sendQuickPrompt('What is your 30-day return policy?')">
+              🔄 30-Day Return Policy
+            </button>
+            <button class="quick-chip" onclick="sendQuickPrompt('I want to return order ORD-1001 for a refund')">
+              💸 Request Refund for ORD-1001
+            </button>
+            <button class="quick-chip" onclick="sendQuickPrompt('My webcam microphone has audio distortion')">
+              ⚠️ Technical Issue (TCK)
+            </button>
+            <button class="quick-chip" onclick="sendQuickPrompt('I want to speak with a human support agent')">
+              👤 Speak with Human Agent
+            </button>
+          </div>
+
+          <!-- Input Bar -->
+          <form class="chat-input-area" id="chat-form" onsubmit="handleSendMessage(event)">
+            <input 
+              type="text" 
+              id="chat-user-input" 
+              class="chat-input" 
+              placeholder="Ask a question or enter order ID (e.g., ORD-1002)..." 
+              autocomplete="off"
+            >
+            <button type="submit" class="btn-send" id="btn-send-message">
+              Send
+            </button>
+          </form>
+        </div>
+
+        <!-- Right Side Panel: Test Context & Orders -->
+        <aside class="sidebar-panel">
+          <div class="side-card">
+            <h3>🧪 Testing Simulator Helper</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+              Click any sample ID below to query mock data:
+            </p>
+            <div class="info-item">
+              <span>Shipped Order:</span>
+              <a href="javascript:void(0)" onclick="sendQuickPrompt('Where is order ORD-1002?')"><code>ORD-1002</code> (UPS)</a>
+            </div>
+            <div class="info-item">
+              <span>Delivered (Eligible Return):</span>
+              <a href="javascript:void(0)" onclick="sendQuickPrompt('I want to refund order ORD-1001')"><code>ORD-1001</code> ($149.99)</a>
+            </div>
+            <div class="info-item">
+              <span>Expired Return (Warranty):</span>
+              <a href="javascript:void(0)" onclick="sendQuickPrompt('Can I return order ORD-1003?')"><code>ORD-1003</code> (Webcam)</a>
+            </div>
+            <div class="info-item">
+              <span>Processing Order:</span>
+              <a href="javascript:void(0)" onclick="sendQuickPrompt('Check status of ORD-1004')"><code>ORD-1004</code> (New)</a>
+            </div>
+          </div>
+
+          <div class="side-card">
+            <h3>⚙️ ReAct Agent Status</h3>
+            <div class="info-item">
+              <span>Active Model:</span>
+              <strong id="agent-active-model">Demo Engine</strong>
+            </div>
+            <div class="info-item">
+              <span>Vector Store:</span>
+              <strong style="color: var(--success);">Online (SQLite RAG)</strong>
+            </div>
+            <div class="info-item">
+              <span>Tools Available:</span>
+              <strong>5 ReAct Tools</strong>
+            </div>
+            <div class="info-item">
+              <span>Human Escalation:</span>
+              <strong>Tier-2 CRM Active</strong>
+            </div>
+          </div>
+        </aside>
+
+      </div>
+    </section>
+
+    <!-- VIEW 2: ADMIN & AGENT CRM DASHBOARD -->
+    <section id="view-admin" class="view-section">
+      
+      <!-- Metrics Overview -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="title">Total Tickets</div>
+          <div class="value" id="metric-total-tickets">0</div>
+        </div>
+        <div class="metric-card">
+          <div class="title">Open Inquiries</div>
+          <div class="value" style="color: #0284c7;" id="metric-open-tickets">0</div>
+        </div>
+        <div class="metric-card">
+          <div class="title">Human Escalations</div>
+          <div class="value" style="color: #dc2626;" id="metric-escalated-tickets">0</div>
+        </div>
+        <div class="metric-card">
+          <div class="title">Resolved Issues</div>
+          <div class="value" style="color: #16a34a;" id="metric-resolved-tickets">0</div>
+        </div>
+      </div>
+
+      <!-- Sub Navigation -->
+      <div class="admin-tabs">
+        <button class="admin-subtab active" id="subtab-tickets" onclick="switchAdminTab('tickets')">
+          📋 Support Ticket Queue
+        </button>
+        <button class="admin-subtab" id="subtab-knowledge" onclick="switchAdminTab('knowledge')">
+          📚 Knowledge Base (RAG)
+        </button>
+        <button class="admin-subtab" id="subtab-orders" onclick="switchAdminTab('orders')">
+          📦 Orders & Customers
+        </button>
+      </div>
+
+      <!-- Tab Content: Tickets Queue -->
+      <div id="admin-content-tickets">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h2 style="font-size: 1.15rem; color: #1e293b;">Live Support Tickets & Escalation Queue</h2>
+          <div style="display: flex; gap: 0.5rem;">
+            <select id="ticket-filter" class="form-control" style="width: auto; padding: 0.4rem 0.8rem;" onchange="loadTickets()">
+              <option value="">All Statuses</option>
+              <option value="OPEN">Open</option>
+              <option value="ESCALATED">Escalated</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="RESOLVED">Resolved</option>
+            </select>
+            <button class="btn-primary" onclick="openNewTicketModal()">+ New Ticket</button>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Ticket ID</th>
+                <th>Subject</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Assigned Agent</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tickets-table-body">
+              <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Loading tickets...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab Content: Knowledge Base RAG -->
+      <div id="admin-content-knowledge" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <div>
+            <h2 style="font-size: 1.15rem; color: #1e293b;">RAG Knowledge Base & Semantic Search</h2>
+            <p style="font-size: 0.825rem; color: var(--text-muted);">
+              Indexed articles and vector embeddings queried by the AI Agent ReAct tools.
+            </p>
+          </div>
+          <button class="btn-primary" onclick="openNewDocModal()">+ Add Knowledge Article</button>
+        </div>
+
+        <!-- Live Vector Search Tester -->
+        <div class="side-card" style="margin-bottom: 1.5rem;">
+          <h3>🔍 Test Semantic Vector Retrieval</h3>
+          <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
+            <input type="text" id="rag-test-input" class="form-control" placeholder="Enter search query (e.g. 'Can I return after 20 days?', 'hardware defect coverage')...">
+            <button class="btn-primary" onclick="testRagSearch()">Search Vector Index</button>
+          </div>
+          <div id="rag-test-results" style="margin-top: 0.75rem;"></div>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Content Snippet</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="knowledge-table-body">
+              <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Loading knowledge articles...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab Content: Orders & Customers -->
+      <div id="admin-content-orders" style="display: none;">
+        <h2 style="font-size: 1.15rem; color: #1e293b; margin-bottom: 1rem;">Customer Orders Database</h2>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Tier</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Tracking</th>
+                <th>Return Eligible</th>
+              </tr>
+            </thead>
+            <tbody id="orders-table-body">
+              <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading orders...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- MODAL: Settings & LLM Configuration -->
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="font-size: 1.1rem; color: #0f172a;">⚙️ AI Agent & LLM Configuration</h3>
+        <button class="settings-btn" onclick="closeSettingsModal()">✕</button>
+      </div>
+
+      <div class="form-group">
+        <label for="setting-provider-select">Select Active LLM Provider</label>
+        <select id="setting-provider-select" class="form-control" onchange="handleProviderChangeUI()">
+          <option value="demo">Demo Engine (Zero-Key Offline Simulator)</option>
+          <option value="gemini">Google Gemini (Gemini 2.5 Flash)</option>
+          <option value="openai">OpenAI (GPT-4o-mini)</option>
+          <option value="groq">Groq Cloud (Llama 3.3 70B)</option>
+          <option value="ollama">Local Ollama (localhost:11434)</option>
+        </select>
+      </div>
+
+      <!-- Provider-specific API Key / Model Input -->
+      <div id="settings-key-container" class="form-group" style="display: none;">
+        <label id="settings-key-label" for="setting-api-key">API Key</label>
+        <input type="password" id="setting-api-key" class="form-control" placeholder="Enter API key...">
+        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+          Saved securely in server memory and session.
+        </p>
+      </div>
+
+      <div class="form-group">
+        <label for="setting-model-name">Model Name</label>
+        <input type="text" id="setting-model-name" class="form-control" placeholder="e.g. gemini-2.5-flash or gpt-4o-mini">
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+        <button class="btn-secondary" onclick="closeSettingsModal()">Cancel</button>
+        <button class="btn-primary" onclick="saveSettings()">Save & Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Add Knowledge Article -->
+  <div class="modal-overlay" id="new-doc-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="font-size: 1.1rem; color: #0f172a;">📚 Add Knowledge Base Article</h3>
+        <button class="settings-btn" onclick="closeNewDocModal()">✕</button>
+      </div>
+
+      <div class="form-group">
+        <label for="doc-title-input">Article Title</label>
+        <input type="text" id="doc-title-input" class="form-control" placeholder="e.g. Extended Holiday Return Policy">
+      </div>
+
+      <div class="form-group">
+        <label for="doc-category-input">Category</label>
+        <input type="text" id="doc-category-input" class="form-control" placeholder="e.g. Returns, Shipping, Technical">
+      </div>
+
+      <div class="form-group">
+        <label for="doc-content-input">Article Content (Chunked & Vector Indexed)</label>
+        <textarea id="doc-content-input" class="form-control" rows="6" placeholder="Provide full details of policy or troubleshooting guide..."></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+        <button class="btn-secondary" onclick="closeNewDocModal()">Cancel</button>
+        <button class="btn-primary" onclick="submitNewDoc()">Index Article</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Create Ticket -->
+  <div class="modal-overlay" id="new-ticket-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="font-size: 1.1rem; color: #0f172a;">📋 Open Support Ticket</h3>
+        <button class="settings-btn" onclick="closeNewTicketModal()">✕</button>
+      </div>
+
+      <div class="form-group">
+        <label for="ticket-subject-input">Subject</label>
+        <input type="text" id="ticket-subject-input" class="form-control" placeholder="Brief summary of issue...">
+      </div>
+
+      <div class="form-group">
+        <label for="ticket-email-input">Customer Email</label>
+        <input type="email" id="ticket-email-input" class="form-control" placeholder="customer@example.com">
+      </div>
+
+      <div class="form-group">
+        <label for="ticket-priority-select">Priority</label>
+        <select id="ticket-priority-select" class="form-control">
+          <option value="LOW">Low</option>
+          <option value="MEDIUM" selected>Medium</option>
+          <option value="HIGH">High</option>
+          <option value="URGENT">Urgent</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="ticket-desc-input">Description</label>
+        <textarea id="ticket-desc-input" class="form-control" rows="4" placeholder="Detailed explanation..."></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+        <button class="btn-secondary" onclick="closeNewTicketModal()">Cancel</button>
+        <button class="btn-primary" onclick="submitNewTicket()">Create Ticket</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main JavaScript Logic -->
+  <script src="/js/app.js"></script>
+</body>
+</html>
