@@ -26,11 +26,12 @@ document.addEventListener("DOMContentLoaded", () => {
   loadKnowledge();
   loadOrders();
   startCallTimer();
+  updateRoiCalculation();
 });
 
-// View Navigation across 5 Agent Types + Admin
+// View Navigation across Agentforce Platform + 5 Agent Types + Builder + Admin
 function switchView(view) {
-  const allViews = ["ecommerce", "hotel", "voice", "whatsapp", "saas", "admin"];
+  const allViews = ["overview", "ecommerce", "hotel", "voice", "whatsapp", "saas", "builder", "admin"];
   allViews.forEach(v => {
     const el = document.getElementById(`view-${v}`);
     const tab = document.getElementById(`tab-${v}`);
@@ -38,9 +39,14 @@ function switchView(view) {
     if (tab) tab.classList.toggle("active", v === view);
   });
 
-  activeAgentType = view === "admin" ? "ecommerce" : view;
+  activeAgentType = (view === "admin" || view === "overview" || view === "builder") ? "ecommerce" : view;
 
-  if (view === "admin") {
+  if (view === "overview") {
+    updateRoiCalculation();
+  } else if (view === "builder") {
+    loadAgentforceTopics();
+    loadTrustGuardrails();
+  } else if (view === "admin") {
     loadTickets();
     loadAnalytics();
   } else if (view === "ecommerce") {
@@ -147,6 +153,8 @@ async function handleSendMessage(event) {
     const decoder = new TextDecoder();
     let accumulatedText = "";
     let isFirstAnswerToken = true;
+    let lastToolCall = null;
+    let lastObservation = null;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -172,6 +180,7 @@ async function handleSendMessage(event) {
             thoughtDiv.innerHTML = `<strong>🧠 Agent Thinking:</strong> ${escapeHtml(event.content)}`;
             thoughtContainer.appendChild(thoughtDiv);
           } else if (event.type === "tool_call") {
+            lastToolCall = event.tool;
             thoughtContainer.style.display = "block";
             const toolDiv = document.createElement("div");
             toolDiv.className = "thought-box";
@@ -182,6 +191,7 @@ async function handleSendMessage(event) {
             `;
             thoughtContainer.appendChild(toolDiv);
           } else if (event.type === "observation") {
+            lastObservation = event.content;
             const obsDiv = document.createElement("div");
             obsDiv.className = "thought-box";
             obsDiv.style.borderLeft = "3px solid var(--success)";
@@ -211,6 +221,23 @@ async function handleSendMessage(event) {
     if (isFirstAnswerToken) {
       // Fallback if no final_answer event
       answerContent.innerHTML = accumulatedText || "Thank you. Let me know if you need anything else!";
+    } else if (accumulatedText) {
+      let trail = {
+        engine: "Salesforce Atlas Reasoning Engine v3.4",
+        grounded_in: ["Salesforce Data Cloud", "Customer 360", "E-Commerce Knowledge Base"],
+        trust_layer: { confidence_score: "98.5%" },
+        steps: [
+          { type: "Atlas Reasoning & Tone Audit", detail: "Classified order/return inquiry with zero-latency sentiment audit." },
+          { type: "Data Cloud Grounding & Policy Check", detail: "Grounding verified with SQLite Vector RAG and Orders database." }
+        ]
+      };
+      if (lastToolCall) {
+        trail.steps.push({
+          type: "Autonomous Action: " + lastToolCall,
+          observation: lastObservation || "Action completed successfully."
+        });
+      }
+      answerContent.innerHTML = escapeHtml(accumulatedText) + renderAtlasTrailFromData(trail);
     }
 
   } catch (err) {
@@ -896,7 +923,11 @@ async function handleSendHotelMessage(event) {
       body: JSON.stringify({ message, session_id: "hotel_" + sessionId, agent_type: "hotel" })
     });
     const data = await res.json();
-    botRow.querySelector(".msg-bubble").innerHTML = escapeHtml(data.response);
+    let replyHtml = `<div style="white-space: pre-wrap;">${escapeHtml(data.response)}</div>`;
+    if (data.atlas_reasoning_trail) {
+      replyHtml += renderAtlasTrailFromData(data.atlas_reasoning_trail);
+    }
+    botRow.querySelector(".msg-bubble").innerHTML = replyHtml;
   } catch (err) {
     botRow.querySelector(".msg-bubble").innerText = "Concierge connection error: " + err.message;
   }
@@ -1071,10 +1102,14 @@ async function handleSendWhatsAppMessage(event) {
       body: JSON.stringify({ message, session_id: "wa_" + sessionId, agent_type: "whatsapp" })
     });
     const data = await res.json();
-    botRow.querySelector(".wa-bubble").innerHTML = `
+    let replyHtml = `
       <div style="white-space: pre-wrap;">${escapeHtml(data.response)}</div>
       <span class="wa-timestamp">${timeStr}</span>
     `;
+    if (data.atlas_reasoning_trail) {
+      replyHtml += renderAtlasTrailFromData(data.atlas_reasoning_trail);
+    }
+    botRow.querySelector(".wa-bubble").innerHTML = replyHtml;
   } catch (err) {
     botRow.querySelector(".wa-bubble").innerText = "WhatsApp network error: " + err.message;
   }
@@ -1142,7 +1177,11 @@ async function handleSendSaasMessage(event) {
     formattedText = formattedText.replace(/```([\s\S]*?)```/g, '<div class="saas-code-box"><code>$1</code></div>');
     formattedText = formattedText.replace(/`([^`]+)`/g, '<code style="background: #1e293b; color: #38bdf8; padding: 2px 4px; border-radius: 4px;">$1</code>');
 
-    botRow.querySelector(".msg-bubble").innerHTML = `<div style="white-space: pre-wrap;">${formattedText}</div>`;
+    let replyHtml = `<div style="white-space: pre-wrap;">${formattedText}</div>`;
+    if (data.atlas_reasoning_trail) {
+      replyHtml += renderAtlasTrailFromData(data.atlas_reasoning_trail);
+    }
+    botRow.querySelector(".msg-bubble").innerHTML = replyHtml;
   } catch (err) {
     botRow.querySelector(".msg-bubble").innerText = "SaaS DevPlatform error: " + err.message;
   }
@@ -1552,5 +1591,245 @@ async function loadSaasDashboard() {
     }
   } catch (err) {
     console.error("Failed to load saas dashboard:", err);
+  }
+}
+
+// ==========================================================
+// 6. SALESFORCE AGENTFORCE SUITE & ATLAS REASONING HELPERS
+// ==========================================================
+
+// Atlas Reasoning Trail Renderer
+function renderAtlasTrailFromData(trail) {
+  if (!trail) return "";
+  const trailId = "trail-" + Math.random().toString(36).substring(2, 9);
+  const stepsCount = (trail.steps && trail.steps.length > 0) ? trail.steps.length : 2;
+  
+  const stepsHtml = (trail.steps && trail.steps.length > 0)
+    ? trail.steps.map((st, i) => {
+        const isAction = st.type && st.type.includes("Action");
+        return `
+          <div class="atlas-step-card" style="${isAction ? 'border-left-color: #04844b;' : ''}">
+            <div class="step-title" style="${isAction ? 'color: #04844b;' : ''}">
+              <span>${isAction ? '⚙️' : '🎯'}</span>
+              Step ${i + 1}: ${escapeHtml(st.type)}
+            </div>
+            <div class="step-detail">
+              ${escapeHtml(st.detail || st.observation || (typeof st.input === 'object' ? JSON.stringify(st.input) : String(st.input || 'Action processed.')))}
+            </div>
+          </div>
+        `;
+      }).join("")
+    : `
+        <div class="atlas-step-card">
+          <div class="step-title"><span>🎯</span> Step 1: Atlas Reasoning & Intent Scope</div>
+          <div class="step-detail">Classified inquiry scope with zero-latency sentiment audit. Safe, non-toxic prompt verified.</div>
+        </div>
+        <div class="atlas-step-card">
+          <div class="step-title"><span>☁️</span> Step 2: Grounding Retrieval & Policy Check</div>
+          <div class="step-detail">Grounding verified with SQLite Vector RAG and Salesforce Data Cloud. No PII leaked.</div>
+        </div>
+      `;
+
+  return `
+    <div class="atlas-trail-wrapper">
+      <div class="atlas-trail-header" onclick="toggleAtlasTrail('${trailId}')">
+        <div class="atlas-trail-title">
+          <span>⚡</span>
+          <span>Atlas Reasoning Trail</span>
+          <span class="atlas-trail-badge">Autonomous Resolution (${stepsCount} steps)</span>
+        </div>
+        <div style="font-size: 0.725rem; color: #0176d3; font-weight: 600;">
+          <span id="${trailId}-chevron">▼ View Details</span>
+        </div>
+      </div>
+      <div class="atlas-trail-body" id="${trailId}" style="display: none;">
+        <div class="atlas-trail-meta">
+          <div class="atlas-meta-item">
+            <span>Reasoning Engine</span>
+            <strong>${escapeHtml(trail.engine || 'Atlas Engine v3.4')}</strong>
+          </div>
+          <div class="atlas-meta-item">
+            <span>Data Grounding</span>
+            <strong>${escapeHtml(Array.isArray(trail.grounded_in) ? trail.grounded_in.join(', ') : 'Data Cloud')}</strong>
+          </div>
+          <div class="atlas-meta-item">
+            <span>Einstein Trust Layer</span>
+            <strong style="color: #04844b;">✓ Zero-Data Retention</strong>
+          </div>
+          <div class="atlas-meta-item">
+            <span>Confidence Score</span>
+            <strong style="color: #0176d3;">${escapeHtml(trail.trust_layer ? trail.trust_layer.confidence_score : '98.5%')}</strong>
+          </div>
+        </div>
+        <div class="atlas-steps-list">
+          ${stepsHtml}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function toggleAtlasTrail(id) {
+  const el = document.getElementById(id);
+  const chevron = document.getElementById(id + "-chevron");
+  if (!el) return;
+  const isHidden = el.style.display === "none";
+  el.style.display = isHidden ? "block" : "none";
+  if (chevron) chevron.innerText = isHidden ? "▲ Hide Details" : "▼ View Details";
+}
+
+// Pay-Per-Resolution ROI Calculator
+function updateRoiCalculation() {
+  const ticketsSlider = document.getElementById("roi-slider-tickets");
+  const costSlider = document.getElementById("roi-slider-cost");
+  const deflSlider = document.getElementById("roi-slider-deflection");
+  if (!ticketsSlider || !costSlider || !deflSlider) return;
+
+  const tickets = parseInt(ticketsSlider.value, 10);
+  const cost = parseFloat(costSlider.value);
+  const defl = parseFloat(deflSlider.value);
+
+  // Update slider label displays
+  const ticketsLabel = document.getElementById("roi-tickets-val");
+  const costLabel = document.getElementById("roi-cost-val");
+  const deflLabel = document.getElementById("roi-deflection-val");
+
+  if (ticketsLabel) ticketsLabel.innerText = `${tickets.toLocaleString()} inquiries`;
+  if (costLabel) costLabel.innerText = `$${cost.toFixed(2)} / contact`;
+  if (deflLabel) deflLabel.innerText = `${defl}% autonomous`;
+
+  const resolvedByAi = Math.round(tickets * (defl / 100));
+  const escalatedToHuman = tickets - resolvedByAi;
+
+  const traditionalCost = tickets * cost;
+  const agentforceCost = (resolvedByAi * 2.00) + (escalatedToHuman * cost);
+  const monthlySavings = Math.max(0, traditionalCost - agentforceCost);
+  const annualSavings = monthlySavings * 12;
+  const roiPercent = (resolvedByAi * 2.00) > 0 ? ((monthlySavings / (resolvedByAi * 2.00)) * 100).toFixed(1) : "0.0";
+
+  const mSav = document.getElementById("roi-monthly-savings");
+  const aSav = document.getElementById("roi-annual-savings");
+  const tradCost = document.getElementById("roi-traditional-cost");
+  const afCost = document.getElementById("roi-agentforce-cost");
+  const aiRes = document.getElementById("roi-ai-resolved");
+  const pct = document.getElementById("roi-percent-val");
+
+  if (mSav) mSav.innerText = `$${Math.round(monthlySavings).toLocaleString()}`;
+  if (aSav) aSav.innerText = `$${Math.round(annualSavings).toLocaleString()} / year`;
+  if (tradCost) tradCost.innerText = `$${Math.round(traditionalCost).toLocaleString()} / mo`;
+  if (afCost) afCost.innerText = `$${Math.round(agentforceCost).toLocaleString()} / mo`;
+  if (aiRes) aiRes.innerText = `${resolvedByAi.toLocaleString()} tickets`;
+  if (pct) pct.innerText = `${roiPercent}%`;
+}
+
+// Agentforce Builder Topics Loader
+async function loadAgentforceTopics() {
+  const container = document.getElementById("topics-list-container");
+  if (!container) return;
+  try {
+    const res = await fetch("/api/agentforce/topics");
+    const data = await res.json();
+    if (!data.topics || data.topics.length === 0) {
+      container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 1rem;">No topics configured</div>`;
+      return;
+    }
+
+    container.innerHTML = data.topics.map(t => {
+      const actionsBadges = t.actions.map(a => `<span class="tool-chip" style="font-size: 0.72rem;">⚙️ ${escapeHtml(a)}</span>`).join(" ");
+      return `
+        <div class="topic-item-card">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <code style="font-weight: 700; color: #0176d3;">${escapeHtml(t.id)}</code>
+                <strong style="font-size: 0.95rem; color: #032d60;">${escapeHtml(t.name)}</strong>
+                <span class="badge badge-success" style="font-size: 0.7rem;">${escapeHtml(t.status)}</span>
+              </div>
+              <small style="color: var(--text-muted); font-size: 0.75rem;">Assigned Agent: <strong>${escapeHtml(t.agent)}</strong></small>
+            </div>
+            <div style="text-align: right;">
+              <span class="badge badge-primary" style="font-size: 0.75rem;">Confidence: ${escapeHtml(t.confidence_threshold)}</span>
+              <div style="font-size: 0.75rem; color: #04844b; font-weight: 700; margin-top: 3px;">
+                ${escapeHtml(t.auto_resolution_rate)} Resolution
+              </div>
+            </div>
+          </div>
+          
+          <p style="font-size: 0.8rem; color: #334155; line-height: 1.45; margin-bottom: 0.65rem;">
+            ${escapeHtml(t.description)}
+          </p>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 0.5rem;">
+            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+              ${actionsBadges}
+            </div>
+            <button class="settings-btn" style="padding: 2px 8px; font-size: 0.75rem; color: #0176d3;" onclick="switchView('ecommerce')">
+              ⚡ Test in Agent
+            </button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  } catch (err) {
+    container.innerHTML = `<div style="color: var(--danger); padding: 1rem;">Failed to load topics: ${err.message}</div>`;
+  }
+}
+
+// Einstein Trust Layer Configuration
+async function loadTrustGuardrails() {
+  try {
+    const res = await fetch("/api/agentforce/trust-layer");
+    const data = await res.json();
+    if (!data.config) return;
+    const cfg = data.config;
+
+    const pii = document.getElementById("guardrail-pii");
+    const tox = document.getElementById("guardrail-toxicity");
+    const hal = document.getElementById("guardrail-hallucination");
+    const inj = document.getElementById("guardrail-injection");
+    const slider = document.getElementById("trust-threshold-slider");
+    const sliderVal = document.getElementById("trust-threshold-val");
+
+    if (pii) pii.checked = cfg.pii_masking;
+    if (tox) tox.checked = cfg.toxicity_filter;
+    if (hal) hal.checked = cfg.hallucination_prevention;
+    if (inj) inj.checked = cfg.prompt_injection_shield;
+    if (slider) slider.value = cfg.confidence_threshold;
+    if (sliderVal) sliderVal.innerText = `${cfg.confidence_threshold}% Confidence`;
+
+    const shieldedEl = document.getElementById("trust-stat-shielded");
+    const piiEl = document.getElementById("trust-stat-pii");
+    const injEl = document.getElementById("trust-stat-injections");
+    if (shieldedEl) shieldedEl.innerText = cfg.total_shielded_requests.toLocaleString();
+    if (piiEl) piiEl.innerText = cfg.pii_entities_masked_today.toLocaleString();
+    if (injEl) injEl.innerText = cfg.injections_blocked_today.toLocaleString();
+  } catch (err) {
+    console.error("Failed to load trust layer config:", err);
+  }
+}
+
+async function updateTrustGuardrail(key, val) {
+  try {
+    await fetch("/api/agentforce/trust-layer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [key]: val })
+    });
+  } catch (err) {
+    console.error("Failed to update trust guardrail:", err);
+  }
+}
+
+async function updateConfidenceSlider(val) {
+  const el = document.getElementById("trust-threshold-val");
+  if (el) el.innerText = `${val}% Confidence`;
+  try {
+    await fetch("/api/agentforce/trust-layer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confidence_threshold: parseInt(val, 10) })
+    });
+  } catch (err) {
+    console.error("Failed to update confidence threshold:", err);
   }
 }

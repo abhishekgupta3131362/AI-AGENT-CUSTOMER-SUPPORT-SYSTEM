@@ -1,23 +1,28 @@
 :root {
-  --primary: #4f46e5;
-  --primary-hover: #4338ca;
-  --primary-light: #eef2ff;
-  --accent: #06b6d4;
-  --bg-main: #f8fafc;
+  --primary: #0176D3;
+  --primary-hover: #0B5CAB;
+  --primary-light: #ebf4fc;
+  --accent: #00a1e0;
+  --salesforce-navy: #032D60;
+  --salesforce-dark: #001e42;
+  --salesforce-cyan: #00c6ff;
+  --salesforce-border: #d8dde6;
+  --bg-main: #f4f6f9;
   --bg-card: #ffffff;
-  --text-main: #0f172a;
-  --text-muted: #64748b;
-  --border: #e2e8f0;
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  --text-main: #032d60;
+  --text-body: #181818;
+  --text-muted: #54698d;
+  --border: #d8dde6;
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.08);
+  --shadow-md: 0 4px 10px -2px rgb(0 0 0 / 0.12), 0 2px 4px -2px rgb(0 0 0 / 0.08);
+  --shadow-lg: 0 12px 24px -4px rgb(0 0 0 / 0.15), 0 4px 6px -2px rgb(0 0 0 / 0.05);
+  --radius-md: 8px;
+  --radius-lg: 14px;
   --radius-full: 9999px;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --success: #04844b;
+  --warning: #fe9339;
+  --danger: #ea001e;
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
 * {
@@ -905,4 +910,364 @@ tr:hover td {
   background: #ffffff;
   color: var(--primary);
   box-shadow: var(--shadow-sm);
+}
+
+/* ==========================================================
+   SALESFORCE LIGHTNING DESIGN SYSTEM (SLDS) & AGENTFORCE THEME
+   ========================================================== */
+
+/* 1. Global Utility Bar */
+.slds-utility-bar {
+  background: linear-gradient(90deg, #001e42 0%, #032d60 60%, #0176d3 100%);
+  color: #e0f2fe;
+  font-size: 0.75rem;
+  padding: 0.4rem 1.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.slds-utility-pill {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: #38bdf8;
+}
+
+/* 2. Salesforce Hero Showcase */
+.salesforce-hero {
+  background: radial-gradient(circle at top right, #0b5cab 0%, #032d60 55%, #001e42 100%);
+  color: #ffffff;
+  border-radius: var(--radius-lg);
+  padding: 2.5rem 2.5rem 2rem 2.5rem;
+  margin-bottom: 1.75rem;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.salesforce-hero::before {
+  content: "";
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(0, 161, 224, 0.25) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.sf-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 161, 224, 0.2);
+  border: 1px solid rgba(0, 161, 224, 0.5);
+  color: #38bdf8;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  margin-bottom: 1rem;
+}
+
+.sf-hero-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+  color: #ffffff;
+  max-width: 880px;
+  margin-bottom: 0.75rem;
+}
+
+.sf-hero-title span {
+  background: linear-gradient(135deg, #38bdf8 0%, #93c5fd 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.sf-hero-subtitle {
+  font-size: 1.05rem;
+  color: #cbd5e1;
+  max-width: 820px;
+  line-height: 1.55;
+  margin-bottom: 1.75rem;
+}
+
+/* Salesforce Hero KPI Grid */
+.sf-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.sf-kpi-card {
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  transition: all 0.2s ease;
+}
+
+.sf-kpi-card:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.sf-kpi-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #38bdf8;
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+
+.sf-kpi-label {
+  font-size: 0.785rem;
+  color: #94a3b8;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sf-kpi-subtext {
+  font-size: 0.75rem;
+  color: #cbd5e1;
+  margin-top: 3px;
+}
+
+/* Hero CTA Row */
+.sf-hero-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.sf-btn-primary {
+  background: #0176d3;
+  color: white;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.65rem 1.4rem;
+  border-radius: var(--radius-full);
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(1, 118, 211, 0.4);
+}
+
+.sf-btn-primary:hover {
+  background: #0b5cab;
+  transform: translateY(-1px);
+}
+
+.sf-btn-outline {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  transition: all 0.2s ease;
+}
+
+.sf-btn-outline:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* 3. Atlas Reasoning Trail Interactive Component */
+.atlas-trail-wrapper {
+  margin-top: 0.65rem;
+  width: 100%;
+}
+
+.atlas-trail-header {
+  background: #f0f7ff;
+  border: 1px solid #bae0fd;
+  border-radius: 8px;
+  padding: 0.45rem 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.atlas-trail-header:hover {
+  background: #e1f0fe;
+  border-color: #0176d3;
+}
+
+.atlas-trail-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.785rem;
+  font-weight: 700;
+  color: #0176d3;
+}
+
+.atlas-trail-badge {
+  background: #0176d3;
+  color: white;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+}
+
+.atlas-trail-body {
+  background: #ffffff;
+  border: 1px solid #bae0fd;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  padding: 0.85rem;
+  font-size: 0.8rem;
+  animation: fadeIn 0.2s ease;
+}
+
+.atlas-trail-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.5rem;
+  background: #f8fafc;
+  padding: 0.6rem;
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+  border: 1px solid #e2e8f0;
+}
+
+.atlas-meta-item span {
+  display: block;
+  font-size: 0.68rem;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.atlas-meta-item strong {
+  font-size: 0.8rem;
+  color: #032d60;
+}
+
+.atlas-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.atlas-step-card {
+  border-left: 3px solid #0176d3;
+  padding-left: 0.65rem;
+  margin-left: 4px;
+}
+
+.atlas-step-card .step-title {
+  font-weight: 700;
+  color: #032d60;
+  font-size: 0.775rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.atlas-step-card .step-detail {
+  color: #334155;
+  font-size: 0.75rem;
+  margin-top: 2px;
+  background: #f1f5f9;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: inherit;
+}
+
+/* 4. Agentforce Builder & Studio Styles */
+.builder-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+}
+
+.topic-item-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.1rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.topic-item-card:hover {
+  border-color: #0176d3;
+  box-shadow: var(--shadow-md);
+}
+
+.guardrail-switch-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* 5. ROI Pay-Per-Resolution Calculator */
+.roi-card {
+  background: linear-gradient(135deg, #032d60 0%, #0176d3 100%);
+  color: white;
+  border-radius: 14px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-lg);
+}
+
+.roi-slider-container {
+  margin-bottom: 1.25rem;
+}
+
+.roi-slider-container label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.roi-slider {
+  width: 100%;
+  accent-color: #38bdf8;
+  cursor: pointer;
+}
+
+.roi-savings-badge {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #4ade80;
+  line-height: 1.1;
+  margin: 0.5rem 0;
 }
