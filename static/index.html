@@ -53,466 +53,878 @@
 
     <!-- VIEW 1: E-COMMERCE AGENT VIEW (Amazon / Flipkart Style) -->
     <section id="view-ecommerce" class="view-section active">
-      <div class="chat-layout">
-        
-        <!-- Chat Area -->
-        <div class="chat-card">
-          <div class="chat-header">
-            <div class="chat-header-info">
-              <div class="agent-avatar">AI</div>
-              <div>
-                <strong style="font-size: 0.95rem;">Apex Support Specialist</strong>
-                <p style="font-size: 0.775rem; color: var(--text-muted);">
-                  <span class="agent-status-dot"></span> Online &bull; Powered by ReAct & RAG
-                </p>
+      
+      <!-- Submode Bar -->
+      <div class="submode-bar">
+        <div>
+          <strong style="color: #1e293b;">🛍️ E-Commerce Operations</strong>
+          <span style="font-size: 0.8rem; color: var(--text-muted); margin-left: 8px;">Order Tracking, Returns & RMA</span>
+        </div>
+        <div class="submode-pills">
+          <button class="submode-pill active" id="pill-ecom-chat" onclick="toggleSubmode('ecom', 'chat')">💬 Customer Support Chat</button>
+          <button class="submode-pill" id="pill-ecom-dash" onclick="toggleSubmode('ecom', 'dash')">📊 E-Commerce Orders & RMA Dashboard</button>
+        </div>
+      </div>
+
+      <!-- E-Commerce Customer Chat Panel -->
+      <div id="ecom-chat-panel">
+        <div class="chat-layout">
+          
+          <!-- Chat Area -->
+          <div class="chat-card">
+            <div class="chat-header">
+              <div class="chat-header-info">
+                <div class="agent-avatar">AI</div>
+                <div>
+                  <strong style="font-size: 0.95rem;">Apex Support Specialist</strong>
+                  <p style="font-size: 0.775rem; color: var(--text-muted);">
+                    <span class="agent-status-dot"></span> Online &bull; Powered by ReAct & RAG
+                  </p>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <div id="customer-sentiment-badge" class="sentiment-chip sentiment-neutral" title="Live Customer Sentiment & Frustration Meter">
+                  <span>😐</span> <span id="sentiment-text">Mood: Neutral</span>
+                </div>
+                <button class="settings-btn" style="padding: 0.35rem 0.65rem; font-size: 0.8rem;" onclick="clearCurrentChat()">
+                  🗑️ Clear Chat
+                </button>
               </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-              <div id="customer-sentiment-badge" class="sentiment-chip sentiment-neutral" title="Live Customer Sentiment & Frustration Meter">
-                <span>😐</span> <span id="sentiment-text">Mood: Neutral</span>
+
+            <!-- Message History -->
+            <div class="chat-messages" id="chat-messages-container">
+              <!-- Welcome Message -->
+              <div class="message-row assistant">
+                <div class="agent-avatar">AI</div>
+                <div class="msg-bubble">
+                  Hello! Welcome to ApexTech Support. I am your autonomous AI assistant. 
+                  I can help you track orders, verify our 30-day return policy, file support tickets, or connect you directly with a human specialist. How can I help you today?
+                </div>
               </div>
-              <button class="settings-btn" style="padding: 0.35rem 0.65rem; font-size: 0.8rem;" onclick="clearCurrentChat()">
-                🗑️ Clear Chat
+            </div>
+
+            <!-- Suggested Quick Prompts -->
+            <div class="quick-prompts">
+              <button class="quick-chip" onclick="sendQuickPrompt('Where is my order ORD-1002?')">
+                📦 Track Order #ORD-1002
+              </button>
+              <button class="quick-chip" onclick="sendQuickPrompt('What is your 30-day return policy?')">
+                🔄 30-Day Return Policy
+              </button>
+              <button class="quick-chip" onclick="sendQuickPrompt('I want to return order ORD-1001 for a refund')">
+                💸 Request Refund for ORD-1001
+              </button>
+              <button class="quick-chip" onclick="sendQuickPrompt('My webcam microphone has audio distortion')">
+                ⚠️ Technical Issue (TCK)
+              </button>
+              <button class="quick-chip" onclick="sendQuickPrompt('I want to speak with a human support agent')">
+                👤 Speak with Human Agent
+              </button>
+              <button class="quick-chip" style="color: #b91c1c; border-color: #fca5a5;" onclick="sendQuickPrompt('THIS IS UNACCEPTABLE MY ORDER IS BROKEN AND YOUR SERVICE SUCKS I WANT A REFUND NOW!')">
+                😡 Test Frustration & Auto-Escalate
               </button>
             </div>
-          </div>
 
-          <!-- Message History -->
-          <div class="chat-messages" id="chat-messages-container">
-            <!-- Welcome Message -->
-            <div class="message-row assistant">
-              <div class="agent-avatar">AI</div>
-              <div class="msg-bubble">
-                Hello! Welcome to ApexTech Support. I am your autonomous AI assistant. 
-                I can help you track orders, verify our 30-day return policy, file support tickets, or connect you directly with a human specialist. How can I help you today?
+            <!-- CSAT Rating Card (Appears after resolution) -->
+            <div id="csat-card" class="csat-container" style="display: none; margin: 0.5rem 1.25rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong style="font-size: 0.875rem; color: #1e1b4b;">⭐ How was your support experience?</strong>
+                <button class="settings-btn" style="padding: 2px 6px; font-size: 0.75rem;" onclick="dismissCsat()">✕</button>
+              </div>
+              <div class="csat-stars" id="csat-star-group">
+                <button class="star-btn active" onclick="rateCsat(1)">⭐</button>
+                <button class="star-btn active" onclick="rateCsat(2)">⭐</button>
+                <button class="star-btn active" onclick="rateCsat(3)">⭐</button>
+                <button class="star-btn active" onclick="rateCsat(4)">⭐</button>
+                <button class="star-btn active" onclick="rateCsat(5)">⭐</button>
+              </div>
+              <div style="display: flex; gap: 0.5rem;">
+                <input type="text" id="csat-feedback-input" class="form-control" style="font-size: 0.8rem; padding: 0.4rem 0.6rem;" placeholder="Optional feedback...">
+                <button class="btn-primary" style="font-size: 0.775rem; padding: 0.4rem 0.8rem;" onclick="submitCsatFeedback()">Submit</button>
               </div>
             </div>
+
+            <!-- Input Bar -->
+            <form class="chat-input-area" id="chat-form" onsubmit="handleSendMessage(event)">
+              <input 
+                type="text" 
+                id="chat-user-input" 
+                class="chat-input" 
+                placeholder="Ask a question or enter order ID (e.g., ORD-1002)..." 
+                autocomplete="off"
+              >
+              <button type="submit" class="btn-send" id="btn-send-message">
+                Send
+              </button>
+            </form>
           </div>
 
-          <!-- Suggested Quick Prompts -->
-          <div class="quick-prompts">
-            <button class="quick-chip" onclick="sendQuickPrompt('Where is my order ORD-1002?')">
-              📦 Track Order #ORD-1002
-            </button>
-            <button class="quick-chip" onclick="sendQuickPrompt('What is your 30-day return policy?')">
-              🔄 30-Day Return Policy
-            </button>
-            <button class="quick-chip" onclick="sendQuickPrompt('I want to return order ORD-1001 for a refund')">
-              💸 Request Refund for ORD-1001
-            </button>
-            <button class="quick-chip" onclick="sendQuickPrompt('My webcam microphone has audio distortion')">
-              ⚠️ Technical Issue (TCK)
-            </button>
-            <button class="quick-chip" onclick="sendQuickPrompt('I want to speak with a human support agent')">
-              👤 Speak with Human Agent
-            </button>
-            <button class="quick-chip" style="color: #b91c1c; border-color: #fca5a5;" onclick="sendQuickPrompt('THIS IS UNACCEPTABLE MY ORDER IS BROKEN AND YOUR SERVICE SUCKS I WANT A REFUND NOW!')">
-              😡 Test Frustration & Auto-Escalate
-            </button>
-          </div>
+          <!-- Right Side Panel: Test Context & Orders -->
+          <aside class="sidebar-panel">
+            <div class="side-card">
+              <h3>🧪 Testing Simulator Helper</h3>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                Click any sample ID below to query mock data:
+              </p>
+              <div class="info-item">
+                <span>Shipped Order:</span>
+                <a href="javascript:void(0)" onclick="sendQuickPrompt('Where is order ORD-1002?')"><code>ORD-1002</code> (UPS)</a>
+              </div>
+              <div class="info-item">
+                <span>Delivered (Eligible Return):</span>
+                <a href="javascript:void(0)" onclick="sendQuickPrompt('I want to refund order ORD-1001')"><code>ORD-1001</code> ($149.99)</a>
+              </div>
+              <div class="info-item">
+                <span>Expired Return (Warranty):</span>
+                <a href="javascript:void(0)" onclick="sendQuickPrompt('Can I return order ORD-1003?')"><code>ORD-1003</code> (Webcam)</a>
+              </div>
+              <div class="info-item">
+                <span>Processing Order:</span>
+                <a href="javascript:void(0)" onclick="sendQuickPrompt('Check status of ORD-1004')"><code>ORD-1004</code> (New)</a>
+              </div>
+            </div>
 
-          <!-- CSAT Rating Card (Appears after resolution) -->
-          <div id="csat-card" class="csat-container" style="display: none; margin: 0.5rem 1.25rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <strong style="font-size: 0.875rem; color: #1e1b4b;">⭐ How was your support experience?</strong>
-              <button class="settings-btn" style="padding: 2px 6px; font-size: 0.75rem;" onclick="dismissCsat()">✕</button>
+            <div class="side-card">
+              <h3>⚙️ ReAct Agent Status</h3>
+              <div class="info-item">
+                <span>Active Model:</span>
+                <strong id="agent-active-model">Demo Engine</strong>
+              </div>
+              <div class="info-item">
+                <span>Vector Store:</span>
+                <strong style="color: var(--success);">Online (SQLite RAG)</strong>
+              </div>
+              <div class="info-item">
+                <span>Tools Available:</span>
+                <strong>5 ReAct Tools</strong>
+              </div>
+              <div class="info-item">
+                <span>Human Escalation:</span>
+                <strong>Tier-2 CRM Active</strong>
+              </div>
             </div>
-            <div class="csat-stars" id="csat-star-group">
-              <button class="star-btn active" onclick="rateCsat(1)">⭐</button>
-              <button class="star-btn active" onclick="rateCsat(2)">⭐</button>
-              <button class="star-btn active" onclick="rateCsat(3)">⭐</button>
-              <button class="star-btn active" onclick="rateCsat(4)">⭐</button>
-              <button class="star-btn active" onclick="rateCsat(5)">⭐</button>
-            </div>
-            <div style="display: flex; gap: 0.5rem;">
-              <input type="text" id="csat-feedback-input" class="form-control" style="font-size: 0.8rem; padding: 0.4rem 0.6rem;" placeholder="Optional feedback...">
-              <button class="btn-primary" style="font-size: 0.775rem; padding: 0.4rem 0.8rem;" onclick="submitCsatFeedback()">Submit</button>
-            </div>
-          </div>
+          </aside>
 
-          <!-- Input Bar -->
-          <form class="chat-input-area" id="chat-form" onsubmit="handleSendMessage(event)">
-            <input 
-              type="text" 
-              id="chat-user-input" 
-              class="chat-input" 
-              placeholder="Ask a question or enter order ID (e.g., ORD-1002)..." 
-              autocomplete="off"
-            >
-            <button type="submit" class="btn-send" id="btn-send-message">
-              Send
-            </button>
-          </form>
+        </div>
+      </div>
+
+      <!-- Dedicated E-Commerce Dashboard Panel -->
+      <div id="ecom-dash-panel" style="display: none;">
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="title">Total Orders</div>
+            <div class="value" id="ecom-metric-total">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="title">Gross Merchandise Value</div>
+            <div class="value" style="color: #10b981;" id="ecom-metric-rev">$0.00</div>
+          </div>
+          <div class="metric-card">
+            <div class="title">Returns & RMA Requested</div>
+            <div class="value" style="color: #f59e0b;" id="ecom-metric-returns">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="title">In-Transit Shipments</div>
+            <div class="value" style="color: #0284c7;" id="ecom-metric-transit">0</div>
+          </div>
         </div>
 
-        <!-- Right Side Panel: Test Context & Orders -->
-        <aside class="sidebar-panel">
-          <div class="side-card">
-            <h3>🧪 Testing Simulator Helper</h3>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
-              Click any sample ID below to query mock data:
-            </p>
-            <div class="info-item">
-              <span>Shipped Order:</span>
-              <a href="javascript:void(0)" onclick="sendQuickPrompt('Where is order ORD-1002?')"><code>ORD-1002</code> (UPS)</a>
-            </div>
-            <div class="info-item">
-              <span>Delivered (Eligible Return):</span>
-              <a href="javascript:void(0)" onclick="sendQuickPrompt('I want to refund order ORD-1001')"><code>ORD-1001</code> ($149.99)</a>
-            </div>
-            <div class="info-item">
-              <span>Expired Return (Warranty):</span>
-              <a href="javascript:void(0)" onclick="sendQuickPrompt('Can I return order ORD-1003?')"><code>ORD-1003</code> (Webcam)</a>
-            </div>
-            <div class="info-item">
-              <span>Processing Order:</span>
-              <a href="javascript:void(0)" onclick="sendQuickPrompt('Check status of ORD-1004')"><code>ORD-1004</code> (New)</a>
-            </div>
+        <div class="side-card" style="margin-bottom: 1.5rem;">
+          <h3>📦 Real-Time Order Fulfillment & Return Authorizations</h3>
+          <div class="table-container" style="margin-top: 0.75rem;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Customer</th>
+                  <th>Tier</th>
+                  <th>Purchased Items</th>
+                  <th>Total Amount</th>
+                  <th>Status</th>
+                  <th>Carrier Tracking</th>
+                  <th>Return Eligible</th>
+                </tr>
+              </thead>
+              <tbody id="ecom-dash-table-body">
+                <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading orders...</td></tr>
+              </tbody>
+            </table>
           </div>
-
-          <div class="side-card">
-            <h3>⚙️ ReAct Agent Status</h3>
-            <div class="info-item">
-              <span>Active Model:</span>
-              <strong id="agent-active-model">Demo Engine</strong>
-            </div>
-            <div class="info-item">
-              <span>Vector Store:</span>
-              <strong style="color: var(--success);">Online (SQLite RAG)</strong>
-            </div>
-            <div class="info-item">
-              <span>Tools Available:</span>
-              <strong>5 ReAct Tools</strong>
-            </div>
-            <div class="info-item">
-              <span>Human Escalation:</span>
-              <strong>Tier-2 CRM Active</strong>
-            </div>
-          </div>
-        </aside>
-
+        </div>
       </div>
+
     </section>
 
     <!-- VIEW 2: HOTEL & HOSPITALITY AGENT VIEW -->
     <section id="view-hotel" class="view-section">
-      <div class="chat-layout">
-        
-        <div class="chat-card">
-          <div class="hotel-header">
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-              <span style="font-size: 1.5rem;">🏨</span>
-              <div>
-                <strong style="font-size: 1.05rem; letter-spacing: 0.5px;">Grand Apex Luxury Hotel & Resort</strong>
-                <p style="font-size: 0.75rem; color: #94a3b8;">5-Star Concierge AI &bull; Room Reservations & Guest Service</p>
+      <!-- Hotel Submode Toggle Bar -->
+      <div class="submode-bar">
+        <button class="submode-pill active" id="pill-hotel-chat" onclick="toggleSubmode('hotel', 'chat')">
+          🛎️ Hotel Concierge Chat
+        </button>
+        <button class="submode-pill" id="pill-hotel-dash" onclick="toggleSubmode('hotel', 'dash')">
+          📊 Hotel Occupancy & Booking Dashboard
+        </button>
+      </div>
+
+      <!-- Concierge Chat Panel -->
+      <div id="hotel-chat-panel">
+        <div class="chat-layout">
+          
+          <div class="chat-card">
+            <div class="hotel-header">
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <span style="font-size: 1.5rem;">🏨</span>
+                <div>
+                  <strong style="font-size: 1.05rem; letter-spacing: 0.5px;">Grand Apex Luxury Hotel & Resort</strong>
+                  <p style="font-size: 0.75rem; color: #94a3b8;">5-Star Concierge AI &bull; Room Reservations & Guest Service</p>
+                </div>
+              </div>
+              <button class="settings-btn" style="background: rgba(255,255,255,0.1); color: white; border-color: rgba(255,255,255,0.2);" onclick="clearHotelChat()">
+                Clear Concierge Chat
+              </button>
+            </div>
+
+            <div class="chat-messages" id="hotel-messages-container">
+              <div class="message-row assistant">
+                <div class="agent-avatar" style="background: #fef3c7; color: #b45309;">🏨</div>
+                <div class="msg-bubble">
+                  Welcome to the Grand Apex Luxury Resort! I am your AI Concierge. I can help you check room rates, book reservations, provide check-in assistance, or dispatch housekeeping amenities to your room. How may I be of service today?
+                </div>
               </div>
             </div>
-            <button class="settings-btn" style="background: rgba(255,255,255,0.1); color: white; border-color: rgba(255,255,255,0.2);" onclick="clearHotelChat()">
-              Clear Concierge Chat
-            </button>
+
+            <!-- Hotel Quick Prompts -->
+            <div class="quick-prompts">
+              <button class="quick-chip" onclick="sendHotelPrompt('What rooms and suites are available?')">
+                🛏️ Check Room Availability
+              </button>
+              <button class="quick-chip" onclick="sendHotelPrompt('I want to book the Deluxe Ocean View King for Nov 1 to Nov 4')">
+                🏖️ Book Ocean View King
+              </button>
+              <button class="quick-chip" onclick="sendHotelPrompt('Can I get extra towels and mineral water sent to Room 304?')">
+                🛎️ Request Housekeeping
+              </button>
+              <button class="quick-chip" onclick="sendHotelPrompt('What time is check-in and checkout?')">
+                🕒 Check-in & Checkout Times
+              </button>
+              <button class="quick-chip" onclick="sendHotelPrompt('Connect me with the hotel front desk manager')">
+                👤 Front Desk Manager
+              </button>
+            </div>
+
+            <form class="chat-input-area" id="hotel-form" onsubmit="handleSendHotelMessage(event)">
+              <input 
+                type="text" 
+                id="hotel-user-input" 
+                class="chat-input" 
+                placeholder="Ask about room availability, reservations, or hotel facilities..." 
+                autocomplete="off"
+              >
+              <button type="submit" class="btn-send">
+                Send
+              </button>
+            </form>
           </div>
 
-          <div class="chat-messages" id="hotel-messages-container">
-            <div class="message-row assistant">
-              <div class="agent-avatar" style="background: #fef3c7; color: #b45309;">🏨</div>
-              <div class="msg-bubble">
-                Welcome to the Grand Apex Luxury Resort! I am your AI Concierge. I can help you check room rates, book reservations, provide check-in assistance, or dispatch housekeeping amenities to your room. How may I be of service today?
+          <!-- Hotel Right Panel: Room Showcase & Amenities -->
+          <aside class="sidebar-panel">
+            <div class="side-card">
+              <h3>🛎️ Live Resort Inventory</h3>
+              <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem;">
+                <div class="hotel-room-card">
+                  <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                    <strong style="font-size: 0.875rem;">Ocean View King</strong>
+                    <span style="color: #4f46e5; font-weight: 700; font-size: 0.9rem;">$189<small>/night</small></span>
+                  </div>
+                  <small style="color: var(--text-muted); margin: 4px 0;">King Bed &bull; Private Balcony &bull; Oceanfront</small>
+                  <button class="settings-btn" style="color: #4f46e5; font-size: 0.75rem; width: 100%; justify-content: center;" onclick="sendHotelPrompt('Book the Deluxe Ocean View King for Nov 1 to Nov 4')">
+                    Reserve This Suite
+                  </button>
+                </div>
+
+                <div class="hotel-room-card">
+                  <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                    <strong style="font-size: 0.875rem;">Executive Family Suite</strong>
+                    <span style="color: #4f46e5; font-weight: 700; font-size: 0.9rem;">$279<small>/night</small></span>
+                  </div>
+                  <small style="color: var(--text-muted); margin: 4px 0;">2 Queen Beds &bull; Whirlpool Tub &bull; Living Area</small>
+                  <button class="settings-btn" style="color: #4f46e5; font-size: 0.75rem; width: 100%; justify-content: center;" onclick="sendHotelPrompt('Check availability for the Executive Family Suite')">
+                    Check Dates
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- Hotel Quick Prompts -->
-          <div class="quick-prompts">
-            <button class="quick-chip" onclick="sendHotelPrompt('What rooms and suites are available?')">
-              🛏️ Check Room Availability
-            </button>
-            <button class="quick-chip" onclick="sendHotelPrompt('I want to book the Deluxe Ocean View King for Nov 1 to Nov 4')">
-              🏖️ Book Ocean View King
-            </button>
-            <button class="quick-chip" onclick="sendHotelPrompt('Can I get extra towels and mineral water sent to Room 304?')">
-              🛎️ Request Housekeeping
-            </button>
-            <button class="quick-chip" onclick="sendHotelPrompt('What time is check-in and checkout?')">
-              🕒 Check-in & Checkout Times
-            </button>
-            <button class="quick-chip" onclick="sendHotelPrompt('Connect me with the hotel front desk manager')">
-              👤 Front Desk Manager
-            </button>
-          </div>
+            <div class="side-card">
+              <h3>✨ Resort Facilities</h3>
+              <div class="info-item"><span>Infinity Pool:</span> <strong>6:00 AM - 10:00 PM</strong></div>
+              <div class="info-item"><span>Breakfast Buffet:</span> <strong>7:00 AM - 11:00 AM</strong></div>
+              <div class="info-item"><span>Spa & Wellness:</span> <strong>Appointments open</strong></div>
+              <div class="info-item"><span>Airport Shuttle:</span> <strong>Complimentary</strong></div>
+            </div>
+          </aside>
 
-          <form class="chat-input-area" id="hotel-form" onsubmit="handleSendHotelMessage(event)">
-            <input 
-              type="text" 
-              id="hotel-user-input" 
-              class="chat-input" 
-              placeholder="Ask about room availability, reservations, or hotel facilities..." 
-              autocomplete="off"
-            >
-            <button type="submit" class="btn-send">
-              Send
-            </button>
-          </form>
+        </div>
+      </div>
+
+      <!-- Dedicated Hotel Operations Dashboard Panel -->
+      <div id="hotel-dash-panel" style="display: none;">
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="title">Occupancy Rate</div>
+            <div class="value" style="color: #4f46e5;" id="hotel-metric-occ">0%</div>
+          </div>
+          <div class="metric-card">
+            <div class="title">Total Suite Capacity</div>
+            <div class="value" id="hotel-metric-total">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="title">Occupied Suites</div>
+            <div class="value" style="color: #f59e0b;" id="hotel-metric-occupied">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="title">Available Suites</div>
+            <div class="value" style="color: #10b981;" id="hotel-metric-avail">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="title">Active Reservations</div>
+            <div class="value" style="color: #0284c7;" id="hotel-metric-res">0</div>
+          </div>
         </div>
 
-        <!-- Hotel Right Panel: Room Showcase & Amenities -->
-        <aside class="sidebar-panel">
-          <div class="side-card">
-            <h3>🛎️ Live Resort Inventory</h3>
-            <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem;">
-              <div class="hotel-room-card">
-                <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                  <strong style="font-size: 0.875rem;">Ocean View King</strong>
-                  <span style="color: #4f46e5; font-weight: 700; font-size: 0.9rem;">$189<small>/night</small></span>
-                </div>
-                <small style="color: var(--text-muted); margin: 4px 0;">King Bed &bull; Private Balcony &bull; Oceanfront</small>
-                <button class="settings-btn" style="color: #4f46e5; font-size: 0.75rem; width: 100%; justify-content: center;" onclick="sendHotelPrompt('Book the Deluxe Ocean View King for Nov 1 to Nov 4')">
-                  Reserve This Suite
-                </button>
-              </div>
-
-              <div class="hotel-room-card">
-                <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                  <strong style="font-size: 0.875rem;">Executive Family Suite</strong>
-                  <span style="color: #4f46e5; font-weight: 700; font-size: 0.9rem;">$279<small>/night</small></span>
-                </div>
-                <small style="color: var(--text-muted); margin: 4px 0;">2 Queen Beds &bull; Whirlpool Tub &bull; Living Area</small>
-                <button class="settings-btn" style="color: #4f46e5; font-size: 0.75rem; width: 100%; justify-content: center;" onclick="sendHotelPrompt('Check availability for the Executive Family Suite')">
-                  Check Dates
-                </button>
-              </div>
-            </div>
+        <div class="side-card" style="margin-bottom: 1.5rem;">
+          <h3>🛏️ Live Room Inventory & Rates</h3>
+          <div class="table-container" style="margin-top: 0.75rem;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Room ID</th>
+                  <th>Suite Type</th>
+                  <th>Max Guests</th>
+                  <th>Price / Night</th>
+                  <th>Available Units</th>
+                  <th>Amenities</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="hotel-rooms-table-body">
+                <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Loading room inventory...</td></tr>
+              </tbody>
+            </table>
           </div>
+        </div>
 
-          <div class="side-card">
-            <h3>✨ Resort Facilities</h3>
-            <div class="info-item"><span>Infinity Pool:</span> <strong>6:00 AM - 10:00 PM</strong></div>
-            <div class="info-item"><span>Breakfast Buffet:</span> <strong>7:00 AM - 11:00 AM</strong></div>
-            <div class="info-item"><span>Spa & Wellness:</span> <strong>Appointments open</strong></div>
-            <div class="info-item"><span>Airport Shuttle:</span> <strong>Complimentary</strong></div>
+        <div class="side-card" style="margin-bottom: 1.5rem;">
+          <h3>📅 Guest Reservations & Check-in Queue</h3>
+          <div class="table-container" style="margin-top: 0.75rem;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Reservation ID</th>
+                  <th>Guest Name</th>
+                  <th>Contact</th>
+                  <th>Suite Reserved</th>
+                  <th>Check-In</th>
+                  <th>Check-Out</th>
+                  <th>Guests</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="hotel-res-table-body">
+                <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading reservations...</td></tr>
+              </tbody>
+            </table>
           </div>
-        </aside>
-
+        </div>
       </div>
+
     </section>
 
     <!-- VIEW 3: AI VOICE SUPPORT AGENT VIEW (Phone Call Simulator) -->
     <section id="view-voice" class="view-section">
-      <div style="max-width: 800px; margin: 0 auto; width: 100%;">
-        
-        <div class="phone-container">
-          <div class="phone-notch"></div>
-          
-          <div style="text-align: center;">
-            <div style="width: 72px; height: 72px; background: linear-gradient(135deg, #38bdf8, #818cf8); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 0.75rem auto;">
-              📞
-            </div>
-            <h2 style="font-size: 1.25rem; font-weight: 700; color: #ffffff;">ApexVoice Support Line</h2>
-            <p style="font-size: 0.85rem; color: #94a3b8;" id="voice-call-status">Call Active &bull; Telephone AI Operator Connected</p>
-            <p style="font-size: 1.1rem; font-family: monospace; color: #38bdf8; margin-top: 4px;" id="voice-call-timer">00:45</p>
-          </div>
-
-          <!-- Animated Voice Waveform Visualizer -->
-          <div class="voice-waveform" id="voice-waveform-bars">
-            <div class="waveform-bar"></div>
-            <div class="waveform-bar"></div>
-            <div class="waveform-bar"></div>
-            <div class="waveform-bar"></div>
-            <div class="waveform-bar"></div>
-            <div class="waveform-bar"></div>
-            <div class="waveform-bar"></div>
-            <div class="waveform-bar"></div>
-          </div>
-
-          <!-- Spoken Transcript Feed -->
-          <div style="width: 100%; background: #1e293b; border-radius: 12px; padding: 1rem; max-height: 220px; overflow-y: auto; margin-bottom: 1.5rem; font-size: 0.85rem; border: 1px solid #334155;" id="voice-transcript-feed">
-            <p style="color: #94a3b8; font-style: italic;">[Operator]: "Hello, thank you for calling Apex Support. This call is serviced by ApexVoice AI. How can I help you today?"</p>
-          </div>
-
-          <!-- Spoken Controls -->
-          <div style="display: flex; gap: 1.5rem; align-items: center; margin-bottom: 1.5rem;">
-            <button class="settings-btn" id="voice-tts-toggle" style="background: #1e293b; color: #38bdf8; border-color: #334155;" onclick="toggleVoiceSpeechAudio()">
-              🔊 Voice Speech: ON
-            </button>
-            <button class="mic-call-btn" id="voice-mic-btn" title="Tap to Speak with Microphone" onclick="toggleMicrophoneSTT()">
-              🎙️
-            </button>
-            <button class="settings-btn" style="background: #1e293b; color: #f87171; border-color: #334155;" onclick="triggerVoiceTransfer()">
-              👤 Transfer Call
-            </button>
-          </div>
-
-          <!-- Text Fallback for Voice Call -->
-          <form style="width: 100%; display: flex; gap: 0.5rem;" onsubmit="handleSendVoiceSpokenMessage(event)">
-            <input type="text" id="voice-spoken-input" class="form-control" style="background: #1e293b; border-color: #334155; color: white;" placeholder="Speak or type what you would say on the call...">
-            <button type="submit" class="btn-primary" style="background: #38bdf8; color: #0f172a;">Speak</button>
-          </form>
-
-        </div>
-
-        <div style="text-align: center; margin-top: 1rem;">
-          <p style="font-size: 0.825rem; color: var(--text-muted);">
-            💡 <em>Tip: Click the 🎙️ red microphone button to speak aloud with your real voice via Web Speech Recognition! The AI operator will reply verbally with natural Text-to-Speech audio!</em>
-          </p>
-        </div>
-
+      <!-- Voice Submode Toggle Bar -->
+      <div class="submode-bar">
+        <button class="submode-pill active" id="pill-voice-call" onclick="toggleSubmode('voice', 'call')">
+          📞 Telephone Call Simulator
+        </button>
+        <button class="submode-pill" id="pill-voice-dash" onclick="toggleSubmode('voice', 'dash')">
+          📊 Telephony Call Center & CDR Dashboard
+        </button>
       </div>
+
+      <!-- Voice Call Simulator Panel -->
+      <div id="voice-call-panel">
+        <div style="max-width: 800px; margin: 0 auto; width: 100%;">
+          
+          <div class="phone-container">
+            <div class="phone-notch"></div>
+            
+            <div style="text-align: center;">
+              <div style="width: 72px; height: 72px; background: linear-gradient(135deg, #38bdf8, #818cf8); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 0.75rem auto;">
+                📞
+              </div>
+              <h2 style="font-size: 1.25rem; font-weight: 700; color: #ffffff;">ApexVoice Support Line</h2>
+              <p style="font-size: 0.85rem; color: #94a3b8;" id="voice-call-status">Call Active &bull; Telephone AI Operator Connected</p>
+              <p style="font-size: 1.1rem; font-family: monospace; color: #38bdf8; margin-top: 4px;" id="voice-call-timer">00:45</p>
+            </div>
+
+            <!-- Animated Voice Waveform Visualizer -->
+            <div class="voice-waveform" id="voice-waveform-bars">
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+            </div>
+
+            <!-- Spoken Transcript Feed -->
+            <div style="width: 100%; background: #1e293b; border-radius: 12px; padding: 1rem; max-height: 220px; overflow-y: auto; margin-bottom: 1.5rem; font-size: 0.85rem; border: 1px solid #334155;" id="voice-transcript-feed">
+              <p style="color: #94a3b8; font-style: italic;">[Operator]: "Hello, thank you for calling Apex Support. This call is serviced by ApexVoice AI. How can I help you today?"</p>
+            </div>
+
+            <!-- Spoken Controls -->
+            <div style="display: flex; gap: 1.5rem; align-items: center; margin-bottom: 1.5rem;">
+              <button class="settings-btn" id="voice-tts-toggle" style="background: #1e293b; color: #38bdf8; border-color: #334155;" onclick="toggleVoiceSpeechAudio()">
+                🔊 Voice Speech: ON
+              </button>
+              <button class="mic-call-btn" id="voice-mic-btn" title="Tap to Speak with Microphone" onclick="toggleMicrophoneSTT()">
+                🎙️
+              </button>
+              <button class="settings-btn" style="background: #1e293b; color: #f87171; border-color: #334155;" onclick="triggerVoiceTransfer()">
+                👤 Transfer Call
+              </button>
+            </div>
+
+            <!-- Text Fallback for Voice Call -->
+            <form style="width: 100%; display: flex; gap: 0.5rem;" onsubmit="handleSendVoiceSpokenMessage(event)">
+              <input type="text" id="voice-spoken-input" class="form-control" style="background: #1e293b; border-color: #334155; color: white;" placeholder="Speak or type what you would say on the call...">
+              <button type="submit" class="btn-primary" style="background: #38bdf8; color: #0f172a;">Speak</button>
+            </form>
+
+          </div>
+
+          <div style="text-align: center; margin-top: 1rem;">
+            <p style="font-size: 0.825rem; color: var(--text-muted);">
+              💡 <em>Tip: Click the 🎙️ red microphone button to speak aloud with your real voice via Web Speech Recognition! The AI operator will reply verbally with natural Text-to-Speech audio!</em>
+            </p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Dedicated Voice Operations Dashboard Panel -->
+      <div id="voice-dash-panel" style="display: none;">
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="title">Total Calls Today</div>
+            <div class="value" style="color: #0284c7;" id="voice-metric-calls">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="title">Avg Handle Time (AHT)</div>
+            <div class="value" id="voice-metric-aht">--</div>
+          </div>
+          <div class="metric-card">
+            <div class="title">First Call Resolution</div>
+            <div class="value" style="color: #10b981;" id="voice-metric-fcr">--</div>
+          </div>
+          <div class="metric-card">
+            <div class="title">Transferred to Human</div>
+            <div class="value" style="color: #f59e0b;" id="voice-metric-transfers">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="title">Active Telephony Lines</div>
+            <div class="value" style="color: #8b5cf6;" id="voice-metric-lines">0</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="side-card">
+            <h3>🎧 Operator Channels & Status</h3>
+            <div class="table-container" style="margin-top: 0.75rem;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Channel</th>
+                    <th>Operator</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="voice-operators-table-body">
+                  <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Loading operators...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="side-card">
+            <h3>📜 Call Detail Records (CDR Log)</h3>
+            <div class="table-container" style="margin-top: 0.75rem;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Call ID</th>
+                    <th>Caller</th>
+                    <th>Duration</th>
+                    <th>Intent</th>
+                    <th>Sentiment</th>
+                    <th>Status</th>
+                    <th>Operator</th>
+                  </tr>
+                </thead>
+                <tbody id="voice-cdr-table-body">
+                  <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Loading CDR logs...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </section>
 
     <!-- VIEW 4: WHATSAPP CUSTOMER SUPPORT AGENT VIEW -->
     <section id="view-whatsapp" class="view-section">
-      <div class="wa-container">
-        
-        <!-- WhatsApp Header -->
-        <div class="wa-header">
-          <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <div style="width: 40px; height: 40px; border-radius: 50%; background: #25d366; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
-              ⚡
-            </div>
-            <div>
-              <div style="display: flex; align-items: center; gap: 4px;">
-                <strong style="font-size: 0.95rem;">ApexTech Official Store</strong>
-                <span style="color: #25d366; font-size: 0.85rem;" title="Verified Business Account">☑️</span>
+      <!-- WhatsApp Submode Toggle Bar -->
+      <div class="submode-bar">
+        <button class="submode-pill active" id="pill-wa-chat" onclick="toggleSubmode('wa', 'chat')">
+          💬 WhatsApp Web Client
+        </button>
+        <button class="submode-pill" id="pill-wa-dash" onclick="toggleSubmode('wa', 'dash')">
+          📊 WhatsApp Commerce & Lead Pipeline
+        </button>
+      </div>
+
+      <!-- WhatsApp Chat Panel -->
+      <div id="wa-chat-panel">
+        <div class="wa-container">
+          
+          <!-- WhatsApp Header -->
+          <div class="wa-header">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div style="width: 40px; height: 40px; border-radius: 50%; background: #25d366; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+                ⚡
               </div>
-              <small style="font-size: 0.725rem; opacity: 0.9;">Business Account &bull; +91 98765-43210 &bull; Typically replies instantly</small>
+              <div>
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <strong style="font-size: 0.95rem;">ApexTech Official Store</strong>
+                  <span style="color: #25d366; font-size: 0.85rem;" title="Verified Business Account">☑️</span>
+                </div>
+                <small style="font-size: 0.725rem; opacity: 0.9;">Business Account &bull; +91 98765-43210 &bull; Typically replies instantly</small>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 0.75rem;">
+              <button class="settings-btn" style="background: transparent; color: white; border: none; font-size: 0.8rem;" onclick="clearWhatsAppChat()">
+                Clear WhatsApp
+              </button>
             </div>
           </div>
 
-          <div style="display: flex; gap: 0.75rem;">
-            <button class="settings-btn" style="background: transparent; color: white; border: none; font-size: 0.8rem;" onclick="clearWhatsAppChat()">
-              Clear WhatsApp
+          <!-- WhatsApp Messages Scroll Area -->
+          <div class="chat-messages" id="wa-messages-container" style="background: #efeae2;">
+            <div class="wa-message-row assistant">
+              <div class="wa-bubble">
+                👋 Namaste! Welcome to ApexTech WhatsApp Support. 
+                You can check our product catalog, place orders with 1-click UPI links, or track existing packages right here on WhatsApp!
+                <span class="wa-timestamp">12:30 PM <span style="color: #53bdeb;">✓✓</span></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- WhatsApp Quick Actions Bar -->
+          <div class="quick-prompts" style="background: #f0f2f5;">
+            <button class="quick-chip" onclick="sendWhatsAppPrompt('Show me your product catalog')">
+              📱 View Product Catalog
+            </button>
+            <button class="quick-chip" onclick="sendWhatsAppPrompt('Buy Wireless ANC Pro Headphones')">
+              🎧 Buy ANC Headphones (UPI)
+            </button>
+            <button class="quick-chip" onclick="sendWhatsAppPrompt('Where is my package ORD-1002?')">
+              📦 Track Order ORD-1002
+            </button>
+            <button class="quick-chip" onclick="sendWhatsAppPrompt('Connect with human WhatsApp sales agent')">
+              👤 Talk to Sales Executive
             </button>
           </div>
-        </div>
 
-        <!-- WhatsApp Messages Scroll Area -->
-        <div class="chat-messages" id="wa-messages-container" style="background: #efeae2;">
-          <div class="wa-message-row assistant">
-            <div class="wa-bubble">
-              👋 Namaste! Welcome to ApexTech WhatsApp Support. 
-              You can check our product catalog, place orders with 1-click UPI links, or track existing packages right here on WhatsApp!
-              <span class="wa-timestamp">12:30 PM <span style="color: #53bdeb;">✓✓</span></span>
-            </div>
+          <!-- WhatsApp Input Area -->
+          <form class="chat-input-area" id="wa-form" style="background: #f0f2f5;" onsubmit="handleSendWhatsAppMessage(event)">
+            <input 
+              type="text" 
+              id="wa-user-input" 
+              class="chat-input" 
+              placeholder="Type a WhatsApp message..." 
+              autocomplete="off"
+            >
+            <button type="submit" class="btn-send" style="background: #00a884;">
+              ➤
+            </button>
+          </form>
+
+        </div>
+      </div>
+
+      <!-- Dedicated WhatsApp Operations Dashboard Panel -->
+      <div id="wa-dash-panel" style="display: none;">
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="title">Total Conversations</div>
+            <div class="value" style="color: #00a884;" id="wa-metric-convs">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="title">Delivery Rate</div>
+            <div class="value" style="color: #10b981;" id="wa-metric-delivery">0%</div>
+          </div>
+          <div class="metric-card">
+            <div class="title">Read Rate (Blue Ticks)</div>
+            <div class="value" style="color: #0284c7;" id="wa-metric-read">0%</div>
+          </div>
+          <div class="metric-card">
+            <div class="title">Quick Orders via UPI</div>
+            <div class="value" style="color: #f59e0b;" id="wa-metric-orders">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="title">Sales Conversion</div>
+            <div class="value" style="color: #8b5cf6;" id="wa-metric-conversion">0%</div>
           </div>
         </div>
 
-        <!-- WhatsApp Quick Actions Bar -->
-        <div class="quick-prompts" style="background: #f0f2f5;">
-          <button class="quick-chip" onclick="sendWhatsAppPrompt('Show me your product catalog')">
-            📱 View Product Catalog
-          </button>
-          <button class="quick-chip" onclick="sendWhatsAppPrompt('Buy Wireless ANC Pro Headphones')">
-            🎧 Buy ANC Headphones (UPI)
-          </button>
-          <button class="quick-chip" onclick="sendWhatsAppPrompt('Where is my package ORD-1002?')">
-            📦 Track Order ORD-1002
-          </button>
-          <button class="quick-chip" onclick="sendWhatsAppPrompt('Connect with human WhatsApp sales agent')">
-            👤 Talk to Sales Executive
-          </button>
+        <div class="side-card" style="margin-bottom: 1.5rem;">
+          <h3>💼 WhatsApp Customer Lead Pipeline & High-Intent Conversations</h3>
+          <div class="table-container" style="margin-top: 0.75rem;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Lead ID</th>
+                  <th>Customer Name</th>
+                  <th>WhatsApp Number</th>
+                  <th>Pipeline Stage</th>
+                  <th>Interested Product</th>
+                  <th>Deal Value</th>
+                  <th>Last Update</th>
+                </tr>
+              </thead>
+              <tbody id="wa-leads-table-body">
+                <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Loading leads...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <!-- WhatsApp Input Area -->
-        <form class="chat-input-area" id="wa-form" style="background: #f0f2f5;" onsubmit="handleSendWhatsAppMessage(event)">
-          <input 
-            type="text" 
-            id="wa-user-input" 
-            class="chat-input" 
-            placeholder="Type a WhatsApp message..." 
-            autocomplete="off"
-          >
-          <button type="submit" class="btn-send" style="background: #00a884;">
-            ➤
-          </button>
-        </form>
-
+        <div class="side-card" style="margin-bottom: 1.5rem;">
+          <h3>🛍️ Fast WhatsApp Catalog & Inventory</h3>
+          <div class="table-container" style="margin-top: 0.75rem;">
+            <table>
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Product Name</th>
+                  <th>WhatsApp Price</th>
+                  <th>Availability</th>
+                  <th>Catalog Status</th>
+                </tr>
+              </thead>
+              <tbody id="wa-catalog-table-body">
+                <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Loading catalog...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
+
     </section>
 
     <!-- VIEW 5: SAAS TECHNICAL SUPPORT AGENT VIEW (Intercom / Fin Style) -->
     <section id="view-saas" class="view-section">
-      <div class="saas-container">
-        
-        <div class="chat-card">
-          <div class="chat-header" style="background: #0f172a; color: white; border-color: #1e293b;">
-            <div class="chat-header-info">
-              <div class="agent-avatar" style="background: #4f46e5; color: white;">Fin</div>
-              <div>
-                <strong style="font-size: 0.95rem;">ApexTech Platform & API Support</strong>
-                <p style="font-size: 0.775rem; color: #94a3b8;">
-                  <span class="agent-status-dot"></span> Senior Solutions Engineer &bull; API v2.4 Operational
-                </p>
+      <!-- SaaS Submode Toggle Bar -->
+      <div class="submode-bar">
+        <button class="submode-pill active" id="pill-saas-chat" onclick="toggleSubmode('saas', 'chat')">
+          🛠️ Fin Developer Assistant
+        </button>
+        <button class="submode-pill" id="pill-saas-dash" onclick="toggleSubmode('saas', 'dash')">
+          📊 SaaS API Health, Errors & Developer Diagnostics
+        </button>
+      </div>
+
+      <!-- SaaS Chat Panel -->
+      <div id="saas-chat-panel">
+        <div class="saas-container">
+          
+          <div class="chat-card">
+            <div class="chat-header" style="background: #0f172a; color: white; border-color: #1e293b;">
+              <div class="chat-header-info">
+                <div class="agent-avatar" style="background: #4f46e5; color: white;">Fin</div>
+                <div>
+                  <strong style="font-size: 0.95rem;">ApexTech Platform & API Support</strong>
+                  <p style="font-size: 0.775rem; color: #94a3b8;">
+                    <span class="agent-status-dot"></span> Senior Solutions Engineer &bull; API v2.4 Operational
+                  </p>
+                </div>
+              </div>
+              <button class="settings-btn" style="background: #1e293b; color: white; border-color: #334155;" onclick="clearSaasChat()">
+                Clear Dev Chat
+              </button>
+            </div>
+
+            <div class="chat-messages" id="saas-messages-container">
+              <div class="message-row assistant">
+                <div class="agent-avatar" style="background: #4f46e5; color: white;">Fin</div>
+                <div class="msg-bubble">
+                  Hello developer! I am Fin, your technical solutions engineer. 
+                  I can diagnose API error codes (e.g. <code>ERR_AUTH_EXPIRED</code>, <code>ERR_RATE_LIMIT_429</code>, <code>ERR_WEBHOOK_TIMEOUT</code>), search documentation, or provide code samples in Python and Node.js. What are you debugging today?
+                </div>
               </div>
             </div>
-            <button class="settings-btn" style="background: #1e293b; color: white; border-color: #334155;" onclick="clearSaasChat()">
-              Clear Dev Chat
-            </button>
+
+            <!-- SaaS Quick Diagnostic Chips -->
+            <div class="quick-prompts">
+              <button class="quick-chip" onclick="sendSaasPrompt('How do I fix ERR_AUTH_EXPIRED?')">
+                🔑 Fix ERR_AUTH_EXPIRED
+              </button>
+              <button class="quick-chip" onclick="sendSaasPrompt('Why am I getting ERR_RATE_LIMIT_429?')">
+                ⏱️ Fix ERR_RATE_LIMIT_429
+              </button>
+              <button class="quick-chip" onclick="sendSaasPrompt('How to handle ERR_WEBHOOK_TIMEOUT?')">
+                ⚡ Fix ERR_WEBHOOK_TIMEOUT
+              </button>
+              <button class="quick-chip" onclick="sendSaasPrompt('How do I install the Python and Node SDKs?')">
+                📦 SDK Installation Guide
+              </button>
+              <button class="quick-chip" onclick="sendSaasPrompt('Escalate to Tier-3 API Architecture Specialist')">
+                👨‍💻 Escalate to Tier-3
+              </button>
+            </div>
+
+            <form class="chat-input-area" id="saas-form" onsubmit="handleSendSaasMessage(event)">
+              <input 
+                type="text" 
+                id="saas-user-input" 
+                class="chat-input" 
+                placeholder="Paste error code (e.g. ERR_RATE_LIMIT_429) or ask technical API question..." 
+                autocomplete="off"
+              >
+              <button type="submit" class="btn-send">
+                Debug
+              </button>
+            </form>
           </div>
 
-          <div class="chat-messages" id="saas-messages-container">
-            <div class="message-row assistant">
-              <div class="agent-avatar" style="background: #4f46e5; color: white;">Fin</div>
-              <div class="msg-bubble">
-                Hello developer! I am Fin, your technical solutions engineer. 
-                I can diagnose API error codes (e.g. <code>ERR_AUTH_EXPIRED</code>, <code>ERR_RATE_LIMIT_429</code>, <code>ERR_WEBHOOK_TIMEOUT</code>), search documentation, or provide code samples in Python and Node.js. What are you debugging today?
+          <!-- SaaS Right Sidebar: Error Quick Links & API Reference -->
+          <aside class="sidebar-panel">
+            <div class="side-card">
+              <h3>⚡ Quick Error Diagnosis</h3>
+              <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
+                <a href="javascript:void(0)" onclick="sendSaasPrompt('Diagnose ERR_AUTH_EXPIRED')"><code>ERR_AUTH_EXPIRED</code> (OAuth)</a>
+                <a href="javascript:void(0)" onclick="sendSaasPrompt('Diagnose ERR_RATE_LIMIT_429')"><code>ERR_RATE_LIMIT_429</code> (Quota)</a>
+                <a href="javascript:void(0)" onclick="sendSaasPrompt('Diagnose ERR_WEBHOOK_TIMEOUT')"><code>ERR_WEBHOOK_TIMEOUT</code> (SLA)</a>
+                <a href="javascript:void(0)" onclick="sendSaasPrompt('Diagnose ERR_SCHEMA_VALIDATION')"><code>ERR_SCHEMA_VALIDATION</code> (JSON)</a>
               </div>
             </div>
-          </div>
 
-          <!-- SaaS Quick Diagnostic Chips -->
-          <div class="quick-prompts">
-            <button class="quick-chip" onclick="sendSaasPrompt('How do I fix ERR_AUTH_EXPIRED?')">
-              🔑 Fix ERR_AUTH_EXPIRED
-            </button>
-            <button class="quick-chip" onclick="sendSaasPrompt('Why am I getting ERR_RATE_LIMIT_429?')">
-              ⏱️ Fix ERR_RATE_LIMIT_429
-            </button>
-            <button class="quick-chip" onclick="sendSaasPrompt('How to handle ERR_WEBHOOK_TIMEOUT?')">
-              ⚡ Fix ERR_WEBHOOK_TIMEOUT
-            </button>
-            <button class="quick-chip" onclick="sendSaasPrompt('How do I install the Python and Node SDKs?')">
-              📦 SDK Installation Guide
-            </button>
-            <button class="quick-chip" onclick="sendSaasPrompt('Escalate to Tier-3 API Architecture Specialist')">
-              👨‍💻 Escalate to Tier-3
-            </button>
-          </div>
+            <div class="side-card">
+              <h3>📚 API Quick Specs</h3>
+              <div class="info-item"><span>Protocol:</span> <strong>REST / SSE / Webhooks</strong></div>
+              <div class="info-item"><span>Version:</span> <strong>v2.4.1 Stable</strong></div>
+              <div class="info-item"><span>Auth:</span> <strong>Bearer JWT OAuth2</strong></div>
+              <div class="info-item"><span>Webhook SLA:</span> <strong>5000ms Timeout</strong></div>
+            </div>
+          </aside>
 
-          <form class="chat-input-area" id="saas-form" onsubmit="handleSendSaasMessage(event)">
-            <input 
-              type="text" 
-              id="saas-user-input" 
-              class="chat-input" 
-              placeholder="Paste error code (e.g. ERR_RATE_LIMIT_429) or ask technical API question..." 
-              autocomplete="off"
-            >
-            <button type="submit" class="btn-send">
-              Debug
-            </button>
-          </form>
+        </div>
+      </div>
+
+      <!-- Dedicated SaaS Operations Dashboard Panel -->
+      <div id="saas-dash-panel" style="display: none;">
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="title">Platform Uptime</div>
+            <div class="value" style="color: #10b981;" id="saas-metric-uptime">0%</div>
+          </div>
+          <div class="metric-card">
+            <div class="title">Avg API Latency</div>
+            <div class="value" style="color: #0284c7;" id="saas-metric-latency">0ms</div>
+          </div>
+          <div class="metric-card">
+            <div class="title">API Calls (24h)</div>
+            <div class="value" style="color: #4f46e5;" id="saas-metric-volume">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="title">Error Rate %</div>
+            <div class="value" style="color: #16a34a;" id="saas-metric-errors">0%</div>
+          </div>
+          <div class="metric-card">
+            <div class="title">Active API Keys</div>
+            <div class="value" style="color: #8b5cf6;" id="saas-metric-keys">0</div>
+          </div>
         </div>
 
-        <!-- SaaS Right Sidebar: Error Quick Links & API Reference -->
-        <aside class="sidebar-panel">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
           <div class="side-card">
-            <h3>⚡ Quick Error Diagnosis</h3>
-            <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
-              <a href="javascript:void(0)" onclick="sendSaasPrompt('Diagnose ERR_AUTH_EXPIRED')"><code>ERR_AUTH_EXPIRED</code> (OAuth)</a>
-              <a href="javascript:void(0)" onclick="sendSaasPrompt('Diagnose ERR_RATE_LIMIT_429')"><code>ERR_RATE_LIMIT_429</code> (Quota)</a>
-              <a href="javascript:void(0)" onclick="sendSaasPrompt('Diagnose ERR_WEBHOOK_TIMEOUT')"><code>ERR_WEBHOOK_TIMEOUT</code> (SLA)</a>
-              <a href="javascript:void(0)" onclick="sendSaasPrompt('Diagnose ERR_SCHEMA_VALIDATION')"><code>ERR_SCHEMA_VALIDATION</code> (JSON)</a>
+            <h3>🌐 Microservices & API Gateway Status</h3>
+            <div class="table-container" style="margin-top: 0.75rem;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Endpoint</th>
+                    <th>Status</th>
+                    <th>Latency</th>
+                    <th>Uptime</th>
+                  </tr>
+                </thead>
+                <tbody id="saas-endpoints-table-body">
+                  <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Loading endpoints...</td></tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
           <div class="side-card">
-            <h3>📚 API Quick Specs</h3>
-            <div class="info-item"><span>Protocol:</span> <strong>REST / SSE / Webhooks</strong></div>
-            <div class="info-item"><span>Version:</span> <strong>v2.4.1 Stable</strong></div>
-            <div class="info-item"><span>Auth:</span> <strong>Bearer JWT OAuth2</strong></div>
-            <div class="info-item"><span>Webhook SLA:</span> <strong>5000ms Timeout</strong></div>
+            <h3>⚠️ Error Code Diagnostic Frequency</h3>
+            <div class="table-container" style="margin-top: 0.75rem;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Error Code</th>
+                    <th>Description</th>
+                    <th>Severity</th>
+                    <th>24h Occurrences</th>
+                  </tr>
+                </thead>
+                <tbody id="saas-errors-table-body">
+                  <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Loading error stats...</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-        </aside>
+        </div>
 
+        <div class="side-card" style="margin-bottom: 1.5rem;">
+          <h3>🎫 Developer Bug & API Escalation Tickets</h3>
+          <div class="table-container" style="margin-top: 0.75rem;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ticket ID</th>
+                  <th>Customer / Dev</th>
+                  <th>Subject</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                </tr>
+              </thead>
+              <tbody id="saas-tickets-table-body">
+                <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading developer tickets...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
+
     </section>
 
     <!-- VIEW 2: ADMIN & AGENT CRM DASHBOARD -->

@@ -43,6 +43,21 @@ function switchView(view) {
   if (view === "admin") {
     loadTickets();
     loadAnalytics();
+  } else if (view === "ecommerce") {
+    const p = document.getElementById("ecom-dash-panel");
+    if (p && p.style.display !== "none") loadEcomDashboard();
+  } else if (view === "hotel") {
+    const p = document.getElementById("hotel-dash-panel");
+    if (p && p.style.display !== "none") loadHotelDashboard();
+  } else if (view === "voice") {
+    const p = document.getElementById("voice-dash-panel");
+    if (p && p.style.display !== "none") loadVoiceDashboard();
+  } else if (view === "whatsapp") {
+    const p = document.getElementById("wa-dash-panel");
+    if (p && p.style.display !== "none") loadWhatsAppDashboard();
+  } else if (view === "saas") {
+    const p = document.getElementById("saas-dash-panel");
+    if (p && p.style.display !== "none") loadSaasDashboard();
   }
 }
 
@@ -1141,4 +1156,401 @@ function clearSaasChat() {
       <div class="msg-bubble">Developer console cleared. Ask any API, webhook, or error diagnostic questions.</div>
     </div>
   `;
+}
+
+// ==========================================
+// 5. DEDICATED DOMAIN DASHBOARDS & SUBMODES
+// ==========================================
+
+function toggleSubmode(domain, mode) {
+  if (domain === "ecom") {
+    const isChat = mode === "chat";
+    const pillChat = document.getElementById("pill-ecom-chat");
+    const pillDash = document.getElementById("pill-ecom-dash");
+    const panelChat = document.getElementById("ecom-chat-panel");
+    const panelDash = document.getElementById("ecom-dash-panel");
+    if (pillChat) pillChat.classList.toggle("active", isChat);
+    if (pillDash) pillDash.classList.toggle("active", !isChat);
+    if (panelChat) panelChat.style.display = isChat ? "block" : "none";
+    if (panelDash) panelDash.style.display = isChat ? "none" : "block";
+    if (!isChat) loadEcomDashboard();
+  } else if (domain === "hotel") {
+    const isChat = mode === "chat";
+    const pillChat = document.getElementById("pill-hotel-chat");
+    const pillDash = document.getElementById("pill-hotel-dash");
+    const panelChat = document.getElementById("hotel-chat-panel");
+    const panelDash = document.getElementById("hotel-dash-panel");
+    if (pillChat) pillChat.classList.toggle("active", isChat);
+    if (pillDash) pillDash.classList.toggle("active", !isChat);
+    if (panelChat) panelChat.style.display = isChat ? "block" : "none";
+    if (panelDash) panelDash.style.display = isChat ? "none" : "block";
+    if (!isChat) loadHotelDashboard();
+  } else if (domain === "voice") {
+    const isCall = mode === "call";
+    const pillCall = document.getElementById("pill-voice-call");
+    const pillDash = document.getElementById("pill-voice-dash");
+    const panelCall = document.getElementById("voice-call-panel");
+    const panelDash = document.getElementById("voice-dash-panel");
+    if (pillCall) pillCall.classList.toggle("active", isCall);
+    if (pillDash) pillDash.classList.toggle("active", !isCall);
+    if (panelCall) panelCall.style.display = isCall ? "block" : "none";
+    if (panelDash) panelDash.style.display = isCall ? "none" : "block";
+    if (!isCall) loadVoiceDashboard();
+  } else if (domain === "wa") {
+    const isChat = mode === "chat";
+    const pillChat = document.getElementById("pill-wa-chat");
+    const pillDash = document.getElementById("pill-wa-dash");
+    const panelChat = document.getElementById("wa-chat-panel");
+    const panelDash = document.getElementById("wa-dash-panel");
+    if (pillChat) pillChat.classList.toggle("active", isChat);
+    if (pillDash) pillDash.classList.toggle("active", !isChat);
+    if (panelChat) panelChat.style.display = isChat ? "block" : "none";
+    if (panelDash) panelDash.style.display = isChat ? "none" : "block";
+    if (!isChat) loadWhatsAppDashboard();
+  } else if (domain === "saas") {
+    const isChat = mode === "chat";
+    const pillChat = document.getElementById("pill-saas-chat");
+    const pillDash = document.getElementById("pill-saas-dash");
+    const panelChat = document.getElementById("saas-chat-panel");
+    const panelDash = document.getElementById("saas-dash-panel");
+    if (pillChat) pillChat.classList.toggle("active", isChat);
+    if (pillDash) pillDash.classList.toggle("active", !isChat);
+    if (panelChat) panelChat.style.display = isChat ? "block" : "none";
+    if (panelDash) panelDash.style.display = isChat ? "none" : "block";
+    if (!isChat) loadSaasDashboard();
+  }
+}
+
+// 1. E-Commerce Dashboard Loader
+async function loadEcomDashboard() {
+  try {
+    const res = await fetch("/api/dashboard/ecommerce");
+    const data = await res.json();
+    
+    // Update metrics
+    const totalEl = document.getElementById("ecom-metric-total");
+    const revEl = document.getElementById("ecom-metric-rev");
+    const returnsEl = document.getElementById("ecom-metric-returns");
+    const transitEl = document.getElementById("ecom-metric-transit");
+
+    if (totalEl) totalEl.innerText = data.metrics.total_orders;
+    if (revEl) revEl.innerText = `$${Number(data.metrics.total_revenue).toFixed(2)}`;
+    if (returnsEl) returnsEl.innerText = data.metrics.returns_count;
+    if (transitEl) transitEl.innerText = data.metrics.in_transit_count;
+
+    // Populate Orders Table
+    const tbody = document.getElementById("ecom-dash-table-body");
+    if (!tbody) return;
+
+    if (!data.orders || data.orders.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No orders found</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = data.orders.map(o => {
+      let itemsStr = "";
+      if (Array.isArray(o.items_parsed)) {
+        itemsStr = o.items_parsed.map(i => `${i.name} (x${i.quantity})`).join(", ");
+      } else {
+        itemsStr = typeof o.items === "string" ? o.items : JSON.stringify(o.items);
+      }
+
+      let statusBadge = `<span class="badge badge-info">${escapeHtml(o.status)}</span>`;
+      if (o.status === "Delivered") statusBadge = `<span class="badge badge-success">Delivered</span>`;
+      else if (o.status === "Return Initiated") statusBadge = `<span class="badge badge-warning">Return Initiated</span>`;
+      else if (o.status === "In Transit") statusBadge = `<span class="badge badge-primary">In Transit</span>`;
+
+      return `
+        <tr>
+          <td><strong>${escapeHtml(o.id)}</strong></td>
+          <td>${escapeHtml(o.customer_name || "Guest")}</td>
+          <td><span class="badge badge-secondary">${escapeHtml(o.customer_tier || "Standard")}</span></td>
+          <td style="max-width: 260px; font-size: 0.825rem;">${escapeHtml(itemsStr)}</td>
+          <td><strong>$${Number(o.total_amount).toFixed(2)}</strong></td>
+          <td>${statusBadge}</td>
+          <td><code>${escapeHtml(o.shipping_carrier || "N/A")} ${escapeHtml(o.tracking_number || "")}</code></td>
+          <td>
+            ${o.return_eligible ? '<span style="color: #16a34a; font-weight: 600;">✓ Eligible</span>' : '<span style="color: #dc2626; font-size: 0.8rem;">✕ Expired</span>'}
+          </td>
+        </tr>
+      `;
+    }).join("");
+  } catch (err) {
+    console.error("Failed to load ecom dashboard:", err);
+  }
+}
+
+// 2. Hotel Dashboard Loader
+async function loadHotelDashboard() {
+  try {
+    const res = await fetch("/api/dashboard/hotel");
+    const data = await res.json();
+
+    const occEl = document.getElementById("hotel-metric-occ");
+    const totalEl = document.getElementById("hotel-metric-total");
+    const occupiedEl = document.getElementById("hotel-metric-occupied");
+    const availEl = document.getElementById("hotel-metric-avail");
+    const resEl = document.getElementById("hotel-metric-res");
+
+    if (occEl) occEl.innerText = `${data.metrics.occupancy_rate}%`;
+    if (totalEl) totalEl.innerText = data.metrics.total_rooms;
+    if (occupiedEl) occupiedEl.innerText = data.metrics.occupied_rooms;
+    if (availEl) availEl.innerText = data.metrics.available_rooms;
+    if (resEl) resEl.innerText = data.metrics.active_reservations;
+
+    // Room Inventory Table
+    const roomsTbody = document.getElementById("hotel-rooms-table-body");
+    if (roomsTbody) {
+      if (!data.rooms || data.rooms.length === 0) {
+        roomsTbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No rooms found</td></tr>`;
+      } else {
+        roomsTbody.innerHTML = data.rooms.map(r => `
+          <tr>
+            <td><code>${escapeHtml(r.id)}</code></td>
+            <td><strong>${escapeHtml(r.room_type)}</strong></td>
+            <td>${escapeHtml(String(r.max_occupancy))} Guests</td>
+            <td><strong style="color: #4f46e5;">$${Number(r.price_per_night).toFixed(2)}</strong><small>/night</small></td>
+            <td>
+              <span class="badge ${r.available_count > 0 ? 'badge-success' : 'badge-danger'}">
+                ${r.available_count} Available
+              </span>
+            </td>
+            <td style="font-size: 0.825rem; color: var(--text-muted);">${escapeHtml(r.amenities || "")}</td>
+            <td>
+              <button class="settings-btn" style="padding: 3px 8px; font-size: 0.775rem;" onclick="toggleSubmode('hotel', 'chat'); sendHotelPrompt('Check availability for ${escapeHtml(r.room_type)}')">
+                Book Suite
+              </button>
+            </td>
+          </tr>
+        `).join("");
+      }
+    }
+
+    // Reservations Table
+    const resTbody = document.getElementById("hotel-res-table-body");
+    if (resTbody) {
+      if (!data.reservations || data.reservations.length === 0) {
+        resTbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No reservations found</td></tr>`;
+      } else {
+        resTbody.innerHTML = data.reservations.map(resv => `
+          <tr>
+            <td><strong>${escapeHtml(resv.id)}</strong></td>
+            <td>${escapeHtml(resv.guest_name)}</td>
+            <td><small>${escapeHtml(resv.guest_email || resv.guest_phone || "N/A")}</small></td>
+            <td>${escapeHtml(resv.room_type || resv.room_id)}</td>
+            <td>${escapeHtml(resv.check_in_date)}</td>
+            <td>${escapeHtml(resv.check_out_date)}</td>
+            <td>${escapeHtml(String(resv.num_guests))}</td>
+            <td><span class="badge badge-success">${escapeHtml(resv.status)}</span></td>
+          </tr>
+        `).join("");
+      }
+    }
+  } catch (err) {
+    console.error("Failed to load hotel dashboard:", err);
+  }
+}
+
+// 3. Voice Telephony Dashboard Loader
+async function loadVoiceDashboard() {
+  try {
+    const res = await fetch("/api/dashboard/voice");
+    const data = await res.json();
+
+    const callsEl = document.getElementById("voice-metric-calls");
+    const ahtEl = document.getElementById("voice-metric-aht");
+    const fcrEl = document.getElementById("voice-metric-fcr");
+    const transfersEl = document.getElementById("voice-metric-transfers");
+    const linesEl = document.getElementById("voice-metric-lines");
+
+    if (callsEl) callsEl.innerText = data.metrics.total_calls_today;
+    if (ahtEl) ahtEl.innerText = data.metrics.avg_handle_time;
+    if (fcrEl) fcrEl.innerText = data.metrics.first_call_resolution;
+    if (transfersEl) transfersEl.innerText = data.metrics.transferred_calls;
+    if (linesEl) linesEl.innerText = data.metrics.active_telephony_lines;
+
+    // Operator lines
+    const opTbody = document.getElementById("voice-operators-table-body");
+    if (opTbody && data.operators) {
+      opTbody.innerHTML = data.operators.map(op => {
+        let badgeClass = "badge-success";
+        if (op.status.includes("In Call")) badgeClass = "badge-primary";
+        else if (op.status.includes("Wrap-Up")) badgeClass = "badge-warning";
+        return `
+          <tr>
+            <td><code>${escapeHtml(op.channel)}</code></td>
+            <td><strong>${escapeHtml(op.name)}</strong></td>
+            <td><span class="badge ${badgeClass}">${escapeHtml(op.status)}</span></td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // CDR table
+    const cdrTbody = document.getElementById("voice-cdr-table-body");
+    if (cdrTbody && data.call_records) {
+      cdrTbody.innerHTML = data.call_records.map(cdr => {
+        let sentimentIcon = "😐";
+        if (cdr.sentiment === "Positive") sentimentIcon = "😊";
+        else if (cdr.sentiment === "Frustrated") sentimentIcon = "😡";
+
+        let statusBadge = cdr.status === "COMPLETED" 
+          ? '<span class="badge badge-success">COMPLETED</span>' 
+          : '<span class="badge badge-danger">TRANSFERRED</span>';
+
+        return `
+          <tr>
+            <td><code>${escapeHtml(cdr.id)}</code></td>
+            <td>${escapeHtml(cdr.caller)}</td>
+            <td><strong>${escapeHtml(cdr.duration)}</strong></td>
+            <td>${escapeHtml(cdr.intent)}</td>
+            <td>${sentimentIcon} ${escapeHtml(cdr.sentiment)}</td>
+            <td>${statusBadge}</td>
+            <td><small>${escapeHtml(cdr.operator)}</small></td>
+          </tr>
+        `;
+      }).join("");
+    }
+  } catch (err) {
+    console.error("Failed to load voice dashboard:", err);
+  }
+}
+
+// 4. WhatsApp Operations Dashboard Loader
+async function loadWhatsAppDashboard() {
+  try {
+    const res = await fetch("/api/dashboard/whatsapp");
+    const data = await res.json();
+
+    const convsEl = document.getElementById("wa-metric-convs");
+    const deliveryEl = document.getElementById("wa-metric-delivery");
+    const readEl = document.getElementById("wa-metric-read");
+    const ordersEl = document.getElementById("wa-metric-orders");
+    const convRateEl = document.getElementById("wa-metric-conversion");
+
+    if (convsEl) convsEl.innerText = data.metrics.total_whatsapp_conversations;
+    if (deliveryEl) deliveryEl.innerText = data.metrics.delivery_rate;
+    if (readEl) readEl.innerText = data.metrics.read_rate;
+    if (ordersEl) ordersEl.innerText = data.metrics.quick_orders_generated;
+    if (convRateEl) convRateEl.innerText = data.metrics.conversion_rate;
+
+    // Leads table
+    const leadsTbody = document.getElementById("wa-leads-table-body");
+    if (leadsTbody && data.leads) {
+      leadsTbody.innerHTML = data.leads.map(lead => {
+        let stageBadge = "badge-info";
+        if (lead.stage.includes("Confirmed")) stageBadge = "badge-success";
+        else if (lead.stage.includes("UPI")) stageBadge = "badge-warning";
+
+        return `
+          <tr>
+            <td><code>${escapeHtml(lead.id)}</code></td>
+            <td><strong>${escapeHtml(lead.name)}</strong></td>
+            <td><code>${escapeHtml(lead.phone)}</code></td>
+            <td><span class="badge ${stageBadge}">${escapeHtml(lead.stage)}</span></td>
+            <td>${escapeHtml(lead.item)}</td>
+            <td><strong style="color: #00a884;">${escapeHtml(lead.amount)}</strong></td>
+            <td><small style="color: var(--text-muted);">${escapeHtml(lead.updated)}</small></td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // Catalog table
+    const catTbody = document.getElementById("wa-catalog-table-body");
+    if (catTbody && data.catalog) {
+      catTbody.innerHTML = data.catalog.map(prod => `
+        <tr>
+          <td><code>${escapeHtml(prod.id)}</code></td>
+          <td><strong>${escapeHtml(prod.name)}</strong></td>
+          <td><strong style="color: #00a884;">${escapeHtml(prod.price)}</strong></td>
+          <td><span style="color: #16a34a; font-weight: 500;">✓ ${escapeHtml(prod.stock)}</span></td>
+          <td><span class="badge badge-success">${escapeHtml(prod.status)}</span></td>
+        </tr>
+      `).join("");
+    }
+  } catch (err) {
+    console.error("Failed to load whatsapp dashboard:", err);
+  }
+}
+
+// 5. SaaS Platform Health Dashboard Loader
+async function loadSaasDashboard() {
+  try {
+    const res = await fetch("/api/dashboard/saas");
+    const data = await res.json();
+
+    const uptimeEl = document.getElementById("saas-metric-uptime");
+    const latencyEl = document.getElementById("saas-metric-latency");
+    const volumeEl = document.getElementById("saas-metric-volume");
+    const errorRateEl = document.getElementById("saas-metric-errors");
+    const keysEl = document.getElementById("saas-metric-keys");
+
+    if (uptimeEl) uptimeEl.innerText = data.metrics.uptime;
+    if (latencyEl) latencyEl.innerText = data.metrics.avg_latency;
+    if (volumeEl) volumeEl.innerText = data.metrics.api_requests_24h;
+    if (errorRateEl) errorRateEl.innerText = data.metrics.error_rate;
+    if (keysEl) keysEl.innerText = data.metrics.active_developer_keys;
+
+    // Endpoints table
+    const epTbody = document.getElementById("saas-endpoints-table-body");
+    if (epTbody && data.endpoint_health) {
+      epTbody.innerHTML = data.endpoint_health.map(ep => `
+        <tr>
+          <td><code>${escapeHtml(ep.endpoint)}</code></td>
+          <td><span class="badge badge-success">${escapeHtml(ep.status)}</span></td>
+          <td><strong>${escapeHtml(ep.latency)}</strong></td>
+          <td><small style="color: #10b981;">${escapeHtml(ep.uptime)}</small></td>
+        </tr>
+      `).join("");
+    }
+
+    // Errors table
+    const errTbody = document.getElementById("saas-errors-table-body");
+    if (errTbody && data.error_distribution) {
+      errTbody.innerHTML = data.error_distribution.map(item => {
+        let sevBadge = item.severity === "HIGH" 
+          ? '<span class="badge badge-danger">HIGH</span>' 
+          : item.severity === "MEDIUM" 
+          ? '<span class="badge badge-warning">MEDIUM</span>' 
+          : '<span class="badge badge-secondary">LOW</span>';
+
+        return `
+          <tr>
+            <td><code>${escapeHtml(item.code)}</code></td>
+            <td>${escapeHtml(item.title)}</td>
+            <td>${sevBadge}</td>
+            <td><strong>${escapeHtml(String(item.count))}</strong></td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // Developer tickets
+    const tckTbody = document.getElementById("saas-tickets-table-body");
+    if (tckTbody) {
+      if (!data.developer_tickets || data.developer_tickets.length === 0) {
+        tckTbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No developer bug tickets found</td></tr>`;
+      } else {
+        tckTbody.innerHTML = data.developer_tickets.map(t => {
+          let priBadge = t.priority === "HIGH" 
+            ? '<span class="badge badge-danger">HIGH</span>' 
+            : '<span class="badge badge-info">NORMAL</span>';
+
+          return `
+            <tr>
+              <td><code>${escapeHtml(t.id)}</code></td>
+              <td>${escapeHtml(t.customer_name || t.customer_id)}</td>
+              <td><strong>${escapeHtml(t.subject)}</strong></td>
+              <td>${priBadge}</td>
+              <td><span class="badge badge-secondary">${escapeHtml(t.status)}</span></td>
+              <td><small>${escapeHtml(t.created_at ? t.created_at.substring(0, 16) : "")}</small></td>
+            </tr>
+          `;
+        }).join("");
+      }
+    }
+  } catch (err) {
+    console.error("Failed to load saas dashboard:", err);
+  }
 }
