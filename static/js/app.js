@@ -1333,6 +1333,99 @@ async function loadEcomDashboard() {
   }
 }
 
+// Platform Context Switcher for E-Commerce View
+function selectEcomPlatformMode(platform) {
+  const btns = document.querySelectorAll(".ecom-plat-btn");
+  btns.forEach(b => b.classList.remove("active"));
+  
+  const activeBtn = document.getElementById(`btn-plat-${platform === "apextech" ? "apex" : platform}`);
+  if (activeBtn) activeBtn.classList.add("active");
+
+  const labelEl = document.getElementById("ecom-platform-active-label");
+  const inputEl = document.getElementById("chat-user-input");
+
+  if (platform === "flipkart") {
+    if (labelEl) labelEl.innerHTML = `Active Context: <strong style="color: #2874f0;">⚡ Flipkart (Ekart Real-Time API)</strong>`;
+    if (inputEl) inputEl.placeholder = "Pucho Flipkart order status, Order ID (OD409218392100), delivery hero contact, OTP...";
+    const sbInput = document.getElementById("carrier-sandbox-input");
+    if (sbInput) sbInput.value = "OD409218392100";
+  } else if (platform === "amazon") {
+    if (labelEl) labelEl.innerHTML = `Active Context: <strong style="color: #d97706;">📦 Amazon India (ATS Carrier API)</strong>`;
+    if (inputEl) inputEl.placeholder = "Pucho Amazon order status, 17-digit Order ID (171-8839201-9921), delivery date...";
+    const sbInput = document.getElementById("carrier-sandbox-input");
+    if (sbInput) sbInput.value = "171-8839201-9921";
+  } else if (platform === "apextech") {
+    if (labelEl) labelEl.innerHTML = `Active Context: <strong style="color: #0176d3;">🛒 ApexTech Global Store</strong>`;
+    if (inputEl) inputEl.placeholder = "Ask about order status (ORD-1002), warranty, return policy, invoice...";
+    const sbInput = document.getElementById("carrier-sandbox-input");
+    if (sbInput) sbInput.value = "ORD-1002";
+  } else {
+    if (labelEl) labelEl.innerHTML = `Active Context: <strong style="color: #0176d3;">Multi-Store Sync</strong>`;
+    if (inputEl) inputEl.placeholder = "Pucho order status, Flipkart order ID (e.g. OD409218392100), invoice, delivery boy number...";
+    const sbInput = document.getElementById("carrier-sandbox-input");
+    if (sbInput) sbInput.value = "OD409218392100";
+  }
+}
+
+// Live Carrier Telemetry Sandbox Runner
+async function trackLiveCarrierSandbox() {
+  const inputEl = document.getElementById("carrier-sandbox-input");
+  const resultEl = document.getElementById("carrier-sandbox-result");
+  if (!inputEl || !resultEl) return;
+
+  const id = inputEl.value.trim();
+  if (!id) {
+    resultEl.style.display = "block";
+    resultEl.innerHTML = `<span style="color: #dc2626;">Please enter an order ID to track.</span>`;
+    return;
+  }
+
+  resultEl.style.display = "block";
+  resultEl.innerHTML = `<div style="color: #54698d;">⚡ Querying live carrier logistics API...</div>`;
+
+  try {
+    const res = await fetch(`/api/ecommerce/track?id=${encodeURIComponent(id)}`);
+    const data = await res.json();
+    if (!data.success || !data.data || !data.data.found) {
+      resultEl.innerHTML = `<span style="color: #dc2626;">❌ ${data.data?.message || data.error || "Order not found."}</span>`;
+      return;
+    }
+
+    const d = data.data;
+    const isFk = d.platform.toLowerCase() === "flipkart";
+    const badgeColor = isFk ? "#2874f0" : (d.platform.toLowerCase() === "amazon" ? "#d97706" : "#0176d3");
+    const curr = (d.currency === "INR" || isFk) ? "₹" : "$";
+
+    let heroHtml = "";
+    if (d.delivery_partner_name) {
+      heroHtml = `<div style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed #cbd5e1;">
+        🛵 <strong>Delivery Hero:</strong> ${escapeHtml(d.delivery_partner_name)} (${escapeHtml(d.delivery_partner_phone || "Contact via app")})
+        ${d.delivery_otp ? `<br>🔑 <strong>Security OTP:</strong> <code style="font-weight: 800; color: #2874f0;">${escapeHtml(d.delivery_otp)}</code>` : ""}
+      </div>`;
+    }
+
+    resultEl.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+        <span class="badge" style="background: ${badgeColor}; color: white; font-size: 0.7rem;">${escapeHtml(d.platform)}</span>
+        <span class="badge badge-success" style="font-size: 0.7rem;">${escapeHtml(d.status)} 🚚</span>
+      </div>
+      <div><strong>Order ID:</strong> <code>${escapeHtml(d.order_id)}</code></div>
+      <div><strong>Amount:</strong> ${curr}${Number(d.total_amount).toLocaleString()} (${escapeHtml(d.payment_method)})</div>
+      <div><strong>Carrier:</strong> ${escapeHtml(d.carrier)} (<code>${escapeHtml(d.tracking_number)}</code>)</div>
+      <div><strong>Current Hub:</strong> ${escapeHtml(d.courier_hub)}</div>
+      <div><strong>ETA:</strong> <strong style="color: #10b981;">${escapeHtml(d.estimated_delivery)}</strong></div>
+      ${heroHtml}
+      <div style="margin-top: 6px;">
+        <button class="settings-btn" style="padding: 2px 6px; font-size: 0.7rem; color: #2874f0;" onclick="sendQuickPrompt('Where is order ${escapeHtml(d.order_id)}?')">
+          💬 Ask in Chat
+        </button>
+      </div>
+    `;
+  } catch (err) {
+    resultEl.innerHTML = `<span style="color: #dc2626;">Network error querying carrier API.</span>`;
+  }
+}
+
 // 2. Hotel Dashboard Loader
 async function loadHotelDashboard() {
   try {

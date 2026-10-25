@@ -1,8 +1,50 @@
 import json
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from backend.database.db import query_db
+from backend.services.ecommerce_api import EcommerceAPIService
 
 order_bp = Blueprint("orders", __name__)
+
+@order_bp.route("/api/ecommerce/track", methods=["GET", "POST"])
+def track_ecommerce_order():
+    """
+    Real-time multi-platform tracking API endpoint.
+    Accepts Order ID or Phone number with optional platform hint.
+    Returns live carrier telemetry from Ekart, ATS, or standard carriers.
+    """
+    if request.method == "POST":
+        data = request.get_json() or {}
+        identifier = data.get("order_id") or data.get("id") or data.get("tracking_number") or data.get("phone", "")
+        platform_hint = data.get("platform")
+    else:
+        identifier = request.args.get("order_id") or request.args.get("id") or request.args.get("phone", "")
+        platform_hint = request.args.get("platform")
+
+    if not identifier:
+        return jsonify({
+            "success": False,
+            "error": "Missing 'order_id' or 'id' parameter. Provide an order ID like 'OD409218392100' or '171-8839201-9921'."
+        }), 400
+
+    tracking_data = EcommerceAPIService.track_order_realtime(str(identifier), platform_hint)
+    formatted_msg = EcommerceAPIService.format_tracking_response(tracking_data)
+
+    return jsonify({
+        "success": True,
+        "identifier": identifier,
+        "platform": tracking_data.get("platform", "Unknown"),
+        "found": tracking_data.get("found", False),
+        "data": tracking_data,
+        "formatted_text": formatted_msg
+    })
+
+@order_bp.route("/api/ecommerce/platforms", methods=["GET"])
+def get_supported_platforms():
+    """Returns list of supported multi-platform e-commerce stores and carriers."""
+    return jsonify({
+        "success": True,
+        "platforms": EcommerceAPIService.SUPPORTED_PLATFORMS
+    })
 
 @order_bp.route("/api/orders", methods=["GET"])
 def get_orders():

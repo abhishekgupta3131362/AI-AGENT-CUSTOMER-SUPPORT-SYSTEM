@@ -74,5 +74,50 @@ class FlipkartAgentTestCase(unittest.TestCase):
         self.assertIn("98112", response_text)
         self.assertIn("4921", response_text) # Security OTP
 
+    def test_flipkart_order_sattus_typo_and_platform_isolation(self):
+        """When user asks with typos like 'flipkart order sattus', agent stays 100% on Flipkart and NEVER mentions Amazon."""
+        res = self.client.post("/api/chat", json={
+            "message": "flipkart order sattus",
+            "session_id": "test_flipkart_conv_5",
+            "agent_type": "ecommerce"
+        })
+        self.assertEqual(res.status_code, 200)
+        data = json.loads(res.data)
+        response_text = data["response"]
+        self.assertIn("Flipkart", response_text)
+        self.assertIn("Ekart", response_text)
+        # Strict isolation check: NEVER mention Amazon when asking about Flipkart!
+        self.assertNotIn("Amazon", response_text)
+        self.assertNotIn("ApexTech", response_text)
+
+    def test_arbitrary_flipkart_order_dynamic_carrier_tracking(self):
+        """Any valid Flipkart OD... order ID is tracked via live Ekart simulation dynamically."""
+        res = self.client.post("/api/chat", json={
+            "message": "Track my Flipkart parcel OD881920194821",
+            "session_id": "test_flipkart_conv_6",
+            "agent_type": "ecommerce"
+        })
+        self.assertEqual(res.status_code, 200)
+        data = json.loads(res.data)
+        response_text = data["response"]
+        self.assertIn("OD881920194821", response_text)
+        self.assertIn("Ekart", response_text)
+        self.assertNotIn("Amazon", response_text)
+
+    def test_ecommerce_api_endpoints(self):
+        """Tests /api/ecommerce/track and /api/ecommerce/platforms REST routes."""
+        res1 = self.client.get("/api/ecommerce/platforms")
+        self.assertEqual(res1.status_code, 200)
+        data1 = json.loads(res1.data)
+        self.assertTrue(data1["success"])
+        self.assertIn("flipkart", data1["platforms"])
+
+        res2 = self.client.get("/api/ecommerce/track?id=OD409218392100")
+        self.assertEqual(res2.status_code, 200)
+        data2 = json.loads(res2.data)
+        self.assertTrue(data2["success"])
+        self.assertEqual(data2["platform"], "Flipkart")
+        self.assertIn("Nothing Phone", data2["formatted_text"])
+
 if __name__ == "__main__":
     unittest.main()
