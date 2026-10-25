@@ -94,6 +94,83 @@ def seed_database():
             )
         print(f"[Seed] Added {len(orders)} mock orders.")
 
+    # 2b. Seed / Ensure Flipkart and Multi-Platform Orders Exist
+    multi_platform_orders = [
+        (
+            "OD409218392100",
+            "CUST-101",
+            json.dumps([{"item": "Nothing Phone (2a) 5G (Black, 128 GB)", "qty": 1, "price": 23999.0}]),
+            23999.0,
+            "INR",
+            "Out for Delivery",
+            "Ekart Logistics",
+            "FMPC0948218",
+            "Today by 7:00 PM (Delivery OTP: 4921)",
+            "2026-10-23",
+            1,
+            "Flipkart",
+            "Ekart Delivery Hub - Sector 62 Noida (Out for delivery by Ramesh Kumar +91-98112-44910)",
+            "Prepaid via UPI PhonePe"
+        ),
+        (
+            "OD123984729100",
+            "CUST-102",
+            json.dumps([{"item": "Noise ColorFit Pro 5 Smartwatch (Jet Black)", "qty": 1, "price": 3499.0}]),
+            3499.0,
+            "INR",
+            "Delivered",
+            "Ekart Logistics",
+            "FMPC0112948",
+            "2026-10-21 (Delivered)",
+            "2026-10-18",
+            1,
+            "Flipkart",
+            "Delivered at Customer Address Bengaluru (7 Days Replacement Window Active)",
+            "Cash on Delivery (₹3,499 paid)"
+        ),
+        (
+            "OD991823746100",
+            "CUST-103",
+            json.dumps([{"item": "Puma Smashic Casual Sneakers (White & Blue, Size 9)", "qty": 1, "price": 1899.0}]),
+            1899.0,
+            "INR",
+            "In Transit",
+            "Ekart Logistics",
+            "FMPC0773912",
+            "Tomorrow by 2:00 PM",
+            "2026-10-24",
+            1,
+            "Flipkart",
+            "Ekart Mother Hub Bilaspur (In Transit to Delivery Station)",
+            "Flipkart Pay Later"
+        ),
+        (
+            "171-8839201-9921",
+            "CUST-104",
+            json.dumps([{"item": "Echo Dot (5th Gen) Smart Speaker with Alexa", "qty": 1, "price": 4499.0}]),
+            4499.0,
+            "INR",
+            "In Transit",
+            "Amazon Transportation Services (ATS)",
+            "ATS-IN-994821",
+            "Tomorrow by 11:00 AM",
+            "2026-10-24",
+            1,
+            "Amazon",
+            "Amazon Fulfilment Centre DEL4",
+            "Amazon Pay ICICI Credit Card"
+        )
+    ]
+    for mpo in multi_platform_orders:
+        execute_db(
+            """
+            INSERT OR REPLACE INTO orders 
+            (id, customer_id, items, total_amount, currency, status, shipping_carrier, tracking_number, estimated_delivery, order_date, is_refundable, platform, courier_hub, payment_method)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            mpo
+        )
+
     # 3. Seed Support Tickets if empty
     existing_tickets = query_db("SELECT COUNT(*) as cnt FROM tickets", one=True)
     if existing_tickets and existing_tickets["cnt"] == 0:
@@ -233,16 +310,19 @@ def seed_database():
 
     # 4. Seed Knowledge Base Vector Store
     vector_store = VectorStore()
-    existing_docs = query_db("SELECT COUNT(*) as cnt FROM knowledge_documents", one=True)
-    if existing_docs and existing_docs["cnt"] == 0:
-        for article in DEFAULT_ARTICLES:
+    added_docs = 0
+    for article in DEFAULT_ARTICLES:
+        existing = query_db("SELECT id FROM knowledge_documents WHERE id = ?", (article["id"],), one=True)
+        if not existing:
             vector_store.add_document(
                 title=article["title"],
                 category=article["category"],
                 content=article["content"],
                 doc_id=article["id"]
             )
-        print(f"[Seed] Indexed {len(DEFAULT_ARTICLES)} knowledge base articles into vector store.")
+            added_docs += 1
+    if added_docs > 0:
+        print(f"[Seed] Indexed {added_docs} new knowledge base articles into vector store.")
 
 if __name__ == "__main__":
     seed_database()

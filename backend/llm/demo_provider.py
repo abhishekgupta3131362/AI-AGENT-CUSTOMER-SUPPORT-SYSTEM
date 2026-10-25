@@ -22,9 +22,8 @@ class DemoProvider(BaseLLMProvider):
             obs_text = obs_match.group(1).strip() if obs_match else "Information verified."
             
             return (
-                f"Thought: I have reviewed the retrieved observation and can now provide a clear, helpful response to the customer.\n"
-                f"Final Answer: Thank you for your inquiry. Based on our system records:\n\n{obs_text}\n\n"
-                f"Please let me know if you would like me to assist you with anything else!"
+                f"Thought: I have reviewed the retrieved observation and will present the exact live order and tracking details to the customer step-by-step.\n"
+                f"Final Answer: {obs_text}"
             )
 
         # Isolate the customer's actual utterance to prevent matching words in system instructions
@@ -32,29 +31,98 @@ class DemoProvider(BaseLLMProvider):
         target_text = customer_matches[-1] if customer_matches else prompt
         t_lower = target_text.lower()
 
-        # Detect order lookup intent (ORD-XXXX)
-        order_match = re.search(r'\b(ORD-\d{4})\b', target_text, re.IGNORECASE)
-        if order_match or any(w in t_lower for w in ["order status", "track my order", "where is my order", "my package"]):
-            order_id = order_match.group(1).upper() if order_match else "ORD-1002"
+        # Multi-Platform Order ID Regex: Flipkart (OD..., FPK-...), Amazon (171-...), ApexTech (ORD-...)
+        order_match = re.search(r'\b(OD\d{6,16}|FPK-\d{4,8}|\d{3}-\d{7}-\d{4,7}|ORD-\d{4})\b', target_text, re.IGNORECASE)
+
+        # 1. FLIPKART INTEGRATION & LINKING INTENTS
+        if any(w in t_lower for w in ["flipkart se link", "link flipkart", "flipcart se link", "link flipcart", "flipkart connect", "connect flipkart"]):
             return (
-                f"Thought: The customer is inquiring about the delivery status of order {order_id}. "
-                f"I will query the order database using the check_order_status tool.\n"
-                f"Action: check_order_status\n"
-                f'Action Input: {{"order_id": "{order_id}"}}'
+                f"Thought: Customer wants to link or verify Flipkart account integration.\n"
+                f"Final Answer: ✅ **Flipkart & Ekart Logistics Integration Connected!**\n\n"
+                f"Aapka Flipkart account successfully link ho gaya hai. Ab aap kisi bhi Flipkart order ka real-time Ekart tracking status, transit location, delivery OTP aur 7-day replacement window yahan live check kar sakte hain.\n\n"
+                f"Kripya apna **Flipkart Order ID** share karein (Jaise sample orders: `OD409218392100` for Nothing Phone 2a, `OD123984729100` for Noise Smartwatch, ya `OD991823746100` for Puma Shoes)."
             )
 
-        # Detect refund / return intent
-        if any(w in t_lower for w in ["refund", "return item", "return my", "send back", "exchange"]):
-            order_id = order_match.group(1).upper() if order_match else "ORD-1001"
+        # 2. SPECIFIC ORDER ID PROVIDED BY CUSTOMER -> EXECUTE TOOL
+        if order_match:
+            order_id = order_match.group(1).upper()
+            if any(w in t_lower for w in ["refund", "return", "wapas", "replacement", "exchange"]):
+                return (
+                    f"Thought: The user is requesting a refund or return for order {order_id}. "
+                    f"I will verify the 30-day/7-day return policy and process the request via the process_refund_return tool.\n"
+                    f"Action: process_refund_return\n"
+                    f'Action Input: {{"order_id": "{order_id}", "reason": "Customer return request"}}'
+                )
+            else:
+                return (
+                    f"Thought: Customer has provided Order ID {order_id}. I will query the live orders database using check_order_status.\n"
+                    f"Action: check_order_status\n"
+                    f'Action Input: {{"order_id": "{order_id}"}}'
+                )
+
+        # 3. DELIVERY BOY / COURIER CONTACT INTENT
+        if any(w in t_lower for w in ["delivery boy", "delivery agent", "courier contact", "driver number", "delivery partner number", "agent number"]):
             return (
-                f"Thought: The user is requesting a refund or return for order {order_id}. "
-                f"I will verify the 30-day return policy and process the request via the process_refund_return tool.\n"
-                f"Action: process_refund_return\n"
-                f'Action Input: {{"order_id": "{order_id}", "reason": "Customer return request"}}'
+                f"Thought: Customer is requesting the delivery executive contact number.\n"
+                f"Final Answer: 🚚 **Ekart Logistics Delivery Partner Details:**\n\n"
+                f"• Delivery Executive: **Ramesh Kumar**\n"
+                f"• Phone Number: **+91 98112-44910**\n"
+                f"• Assigned Hub: Ekart Hub Sector 62, Noida\n"
+                f"• Status: Out for delivery on route\n"
+                f"• Security OTP: **4921** (Kripya parcel receive karte samay delivery hero ko OTP verify karayein)\n\n"
+                f"Kya aapko delivery boy ko urgent delivery call lagwana hai?"
             )
 
-        # Detect human escalation intent
-        if any(w in t_lower for w in ["human", "representative", "speak to someone", "agent", "supervisor", "escalate", "real person"]):
+        # 4. INVOICE / RECEIPT INTENT (WITHOUT ID)
+        if any(w in t_lower for w in ["invoice", "bill", "tax invoice", "receipt", "slip"]):
+            return (
+                f"Thought: Customer is requesting an invoice but did not provide the order number.\n"
+                f"Final Answer: 📄 **Official GST Tax Invoice Download**\n\n"
+                f"Invoice download karne ke liye, kripya apna **Order ID** batayein (Jaise Flipkart ka `OD409218392100` ya Amazon ka `171-8839201-9921`).\n\n"
+                f"ID provide karte hi main instant PDF download link generate kar doonga!"
+            )
+
+        # 5. ORDER STATUS INQUIRY WITHOUT ORDER ID -> STEP-BY-STEP DIALOGUE
+        if any(w in t_lower for w in ["order status", "track my order", "where is my order", "my package", "mera order", "order track", "kahan hai", "kab aayega", "delivery status", "order check"]):
+            if "flipkart" in t_lower or "flipcart" in t_lower:
+                return (
+                    f"Thought: Customer wants to track a Flipkart order but has not provided the Order ID yet. I must ask them for their Flipkart Order ID step-by-step.\n"
+                    f"Final Answer: Namaste! Zaroor, main aapka **Flipkart order** Ekart Logistics live tracking ke zariye trace kar sakta hoon. 📦\n\n"
+                    f"Kripya apna **Flipkart Order ID** share karein:\n"
+                    f"• Jaise: `OD409218392100` (Nothing Phone 2a)\n"
+                    f"• Jaise: `OD123984729100` (Noise Smartwatch)\n"
+                    f"• Jaise: `OD991823746100` (Puma Shoes)\n\n"
+                    f"Aap apna Order ID type karein, main turant live location, expected delivery date aur OTP details screen par show kar doonga!"
+                )
+            elif "amazon" in t_lower:
+                return (
+                    f"Thought: Customer wants to track an Amazon order but has not provided the Order ID yet.\n"
+                    f"Final Answer: Zaroor! Amazon order track karne ke liye, kripya apna **Amazon Order ID** share karein (Jaise sample: `171-8839201-9921`). Main Amazon ATS logistics se live status nikaal doonga!"
+                )
+            else:
+                return (
+                    f"Thought: Customer is inquiring about order tracking but has not specified an Order ID or platform. I must interact step-by-step and ask them which platform they ordered from and their Order ID.\n"
+                    f"Final Answer: Zaroor! Main aapke order ki live tracking aur delivery status nikaal sakta hoon. Kripya step-by-step confirm karein:\n\n"
+                    f"1️⃣ **Aap kis platform ka order track karna chahte hain?**\n"
+                    f"   • 🛍️ **Flipkart** (e.g. Order ID: `OD409218392100`)\n"
+                    f"   • 📦 **Amazon** (e.g. Order ID: `171-8839201-9921`)\n"
+                    f"   • 🛒 **ApexTech Store** (e.g. Order ID: `ORD-1002`)\n\n"
+                    f"2️⃣ **Aapka Order ID kya hai?**\n\n"
+                    f"Aap Order ID enter karein, main turant Ekart / courier live tracking se status fetch karke batata hoon!"
+                )
+
+        # 6. REFUND / RETURN INTENT WITHOUT ORDER ID
+        if any(w in t_lower for w in ["refund", "return item", "return my", "send back", "exchange", "wapas karna"]):
+            return (
+                f"Thought: Customer is asking about returns or refunds without providing an Order ID.\n"
+                f"Final Answer: Zaroor! Main aapka return ya refund request initiate kar sakta hoon. Kripya batayein:\n\n"
+                f"1️⃣ **Aapka Order ID kya hai?** (Jaise Flipkart ka `OD123984729100` ya `ORD-1001`)\n"
+                f"2️⃣ **Return ya replacement ka reason kya hai?** (Jaise: Size issue, defective product, ya package damage)\n\n"
+                f"Order ID share karte hi main return eligibility verify karke instant RMA pickup schedule kar doonga!"
+            )
+
+        # 7. HUMAN ESCALATION INTENT
+        if any(w in t_lower for w in ["human", "representative", "speak to someone", "agent", "supervisor", "escalate", "real person", "insan se baat", "manager"]):
             return (
                 f"Thought: The customer has explicitly requested a human specialist. "
                 f"According to company policy, I must promptly escalate the session.\n"

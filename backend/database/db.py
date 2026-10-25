@@ -43,9 +43,23 @@ def init_db():
             estimated_delivery TEXT,
             order_date TEXT NOT NULL,
             is_refundable INTEGER DEFAULT 1,
+            platform TEXT DEFAULT 'ApexTech',
+            courier_hub TEXT DEFAULT 'Main Logistics Hub',
+            payment_method TEXT DEFAULT 'Prepaid',
             FOREIGN KEY (customer_id) REFERENCES customers(id)
         )
     """)
+
+    # Ensure backward-compatible migrations for existing SQLite databases
+    for col_def in [
+        ("platform", "TEXT DEFAULT 'ApexTech'"),
+        ("courier_hub", "TEXT DEFAULT 'Main Logistics Hub'"),
+        ("payment_method", "TEXT DEFAULT 'Prepaid'")
+    ]:
+        try:
+            cursor.execute(f"ALTER TABLE orders ADD COLUMN {col_def[0]} {col_def[1]}")
+        except sqlite3.OperationalError:
+            pass # Column already exists
     
     # 3. Support Tickets Table
     cursor.execute("""

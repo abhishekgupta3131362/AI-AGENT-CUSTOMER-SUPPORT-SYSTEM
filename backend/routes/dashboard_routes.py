@@ -29,13 +29,20 @@ def get_ecommerce_dashboard():
     in_transit_count = sum(1 for o in orders if o["status"] == "In Transit")
     delivered_count = sum(1 for o in orders if o["status"] == "Delivered")
 
-    carriers = {"FedEx": 0, "UPS": 0, "DHL": 0, "Other": 0}
+    carriers = {"Ekart Logistics": 0, "FedEx": 0, "UPS": 0, "DHL": 0, "Other": 0}
+    platforms = {"Flipkart": 0, "Amazon": 0, "ApexTech": 0}
     for o in orders:
         c = o.get("shipping_carrier")
         if c in carriers:
             carriers[c] += 1
         elif c:
             carriers["Other"] += 1
+
+        p = o.get("platform", "ApexTech")
+        if p in platforms:
+            platforms[p] += 1
+        elif p:
+            platforms["ApexTech"] += 1
 
     return jsonify({
         "metrics": {
@@ -46,6 +53,7 @@ def get_ecommerce_dashboard():
             "delivered_count": delivered_count
         },
         "carrier_breakdown": carriers,
+        "platform_breakdown": platforms,
         "orders": orders
     })
 

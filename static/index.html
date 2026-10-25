@@ -310,12 +310,16 @@
       <!-- Submode Bar -->
       <div class="submode-bar">
         <div>
-          <strong style="color: #1e293b;">🛍️ E-Commerce Operations</strong>
-          <span style="font-size: 0.8rem; color: var(--text-muted); margin-left: 8px;">Order Tracking, Returns & RMA</span>
+          <strong style="color: #032d60;">🛍️ E-Commerce Multi-Platform Support</strong>
+          <span style="font-size: 0.8rem; color: var(--text-muted); margin-left: 8px;">
+            <span class="badge" style="background: #2874f0; color: white;">Flipkart (Ekart)</span>
+            <span class="badge" style="background: #ff9900; color: black; margin-left: 4px;">Amazon</span>
+            <span class="badge" style="background: #0176d3; color: white; margin-left: 4px;">ApexTech</span>
+          </span>
         </div>
         <div class="submode-pills">
           <button class="submode-pill active" id="pill-ecom-chat" onclick="toggleSubmode('ecom', 'chat')">💬 Customer Support Chat</button>
-          <button class="submode-pill" id="pill-ecom-dash" onclick="toggleSubmode('ecom', 'dash')">📊 E-Commerce Orders & RMA Dashboard</button>
+          <button class="submode-pill" id="pill-ecom-dash" onclick="toggleSubmode('ecom', 'dash')">📊 Orders & RMA Dashboard</button>
         </div>
       </div>
 
@@ -327,11 +331,11 @@
           <div class="chat-card">
             <div class="chat-header">
               <div class="chat-header-info">
-                <div class="agent-avatar">AI</div>
+                <div class="agent-avatar" style="background: #2874f0; color: white;">🛍️</div>
                 <div>
-                  <strong style="font-size: 0.95rem;">Apex Support Specialist</strong>
+                  <strong style="font-size: 0.95rem;">E-Commerce Service Assistant</strong>
                   <p style="font-size: 0.775rem; color: var(--text-muted);">
-                    <span class="agent-status-dot"></span> Online &bull; Powered by ReAct & RAG
+                    <span class="agent-status-dot"></span> Online &bull; Flipkart &bull; Amazon &bull; ApexTech
                   </p>
                 </div>
               </div>
@@ -349,33 +353,43 @@
             <div class="chat-messages" id="chat-messages-container">
               <!-- Welcome Message -->
               <div class="message-row assistant">
-                <div class="agent-avatar">AI</div>
+                <div class="agent-avatar" style="background: #2874f0; color: white;">🛍️</div>
                 <div class="msg-bubble">
-                  Hello! Welcome to ApexTech Support. I am your autonomous AI assistant. 
-                  I can help you track orders, verify our 30-day return policy, file support tickets, or connect you directly with a human specialist. How can I help you today?
+                  Namaste! Welcome to E-Commerce Customer Support. I am your autonomous AI assistant connected with <strong>Flipkart (Ekart Logistics)</strong>, <strong>Amazon</strong>, and <strong>ApexTech</strong>. 
+                  <br><br>
+                  Aapko kis platform ke order ki jankari chahiye? Apna <strong>Order ID</strong> share karein ya batayein main kaise madad karoon!
                 </div>
               </div>
             </div>
 
             <!-- Suggested Quick Prompts -->
             <div class="quick-prompts">
-              <button class="quick-chip" onclick="sendQuickPrompt('Where is my order ORD-1002?')">
-                📦 Track Order #ORD-1002
+              <button class="quick-chip" onclick="sendQuickPrompt('Mera order kahan hai?')">
+                ❓ Mera order kahan hai? (Ask Step-by-Step)
               </button>
-              <button class="quick-chip" onclick="sendQuickPrompt('What is your 30-day return policy?')">
-                🔄 30-Day Return Policy
+              <button class="quick-chip" style="background: #e0f2fe; color: #0284c7; border-color: #bae0fd;" onclick="sendQuickPrompt('Flipkart se link karo ise')">
+                ⚡ Flipkart se link karo
               </button>
-              <button class="quick-chip" onclick="sendQuickPrompt('I want to return order ORD-1001 for a refund')">
-                💸 Request Refund for ORD-1001
+              <button class="quick-chip" onclick="sendQuickPrompt('Where is my Flipkart order OD409218392100?')">
+                📱 Track Flipkart #OD409218392100 (Nothing Phone)
               </button>
-              <button class="quick-chip" onclick="sendQuickPrompt('My webcam microphone has audio distortion')">
-                ⚠️ Technical Issue (TCK)
+              <button class="quick-chip" onclick="sendQuickPrompt('Check status of Flipkart order OD123984729100')">
+                ⌚ Track Flipkart #OD123984729100 (Noise Watch)
+              </button>
+              <button class="quick-chip" onclick="sendQuickPrompt('Ekart delivery boy ka contact number do')">
+                🚚 Ekart Delivery Boy Number
+              </button>
+              <button class="quick-chip" onclick="sendQuickPrompt('Mujhe tax invoice chahiye')">
+                📄 Download Tax Invoice
+              </button>
+              <button class="quick-chip" onclick="sendQuickPrompt('I want to return order OD123984729100')">
+                🔄 Flipkart 7-Day Replacement
+              </button>
+              <button class="quick-chip" onclick="sendQuickPrompt('Track Amazon order 171-8839201-9921')">
+                📦 Track Amazon #171-8839201
               </button>
               <button class="quick-chip" onclick="sendQuickPrompt('I want to speak with a human support agent')">
                 👤 Speak with Human Agent
-              </button>
-              <button class="quick-chip" style="color: #b91c1c; border-color: #fca5a5;" onclick="sendQuickPrompt('THIS IS UNACCEPTABLE MY ORDER IS BROKEN AND YOUR SERVICE SUCKS I WANT A REFUND NOW!')">
-                😡 Test Frustration & Auto-Escalate
               </button>
             </div>
 
@@ -404,7 +418,7 @@
                 type="text" 
                 id="chat-user-input" 
                 class="chat-input" 
-                placeholder="Ask a question or enter order ID (e.g., ORD-1002)..." 
+                placeholder="Pucho order status, Flipkart order ID (e.g. OD409218392100), invoice, delivery boy number..." 
                 autocomplete="off"
               >
               <button type="submit" class="btn-send" id="btn-send-message">
@@ -416,45 +430,73 @@
           <!-- Right Side Panel: Test Context & Orders -->
           <aside class="sidebar-panel">
             <div class="side-card">
-              <h3>🧪 Testing Simulator Helper</h3>
+              <h3>🛍️ Connected Platform Accounts</h3>
               <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
-                Click any sample ID below to query mock data:
+                Click any sample order below to test step-by-step resolution:
               </p>
-              <div class="info-item">
-                <span>Shipped Order:</span>
-                <a href="javascript:void(0)" onclick="sendQuickPrompt('Where is order ORD-1002?')"><code>ORD-1002</code> (UPS)</a>
+              
+              <!-- Flipkart Orders -->
+              <div style="background: #f0f7ff; border: 1px solid #bae0fd; border-radius: 8px; padding: 0.6rem; margin-bottom: 0.75rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <strong style="color: #2874f0; font-size: 0.8rem;">⚡ Flipkart (Ekart Live)</strong>
+                  <span class="badge badge-success" style="font-size: 0.65rem;">Linked</span>
+                </div>
+                <div class="info-item" style="padding: 2px 0;">
+                  <span>Out for Delivery:</span>
+                  <a href="javascript:void(0)" onclick="sendQuickPrompt('Where is my Flipkart order OD409218392100?')"><code>OD409218392100</code></a>
+                </div>
+                <div class="info-item" style="padding: 2px 0;">
+                  <span>Delivered (Noise Watch):</span>
+                  <a href="javascript:void(0)" onclick="sendQuickPrompt('Track Flipkart order OD123984729100')"><code>OD123984729100</code></a>
+                </div>
+                <div class="info-item" style="padding: 2px 0;">
+                  <span>In Transit (Puma):</span>
+                  <a href="javascript:void(0)" onclick="sendQuickPrompt('Check status of OD991823746100')"><code>OD991823746100</code></a>
+                </div>
               </div>
-              <div class="info-item">
-                <span>Delivered (Eligible Return):</span>
-                <a href="javascript:void(0)" onclick="sendQuickPrompt('I want to refund order ORD-1001')"><code>ORD-1001</code> ($149.99)</a>
+
+              <!-- Amazon Orders -->
+              <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 0.6rem; margin-bottom: 0.75rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <strong style="color: #d97706; font-size: 0.8rem;">📦 Amazon India (ATS)</strong>
+                  <span class="badge badge-secondary" style="font-size: 0.65rem;">Connected</span>
+                </div>
+                <div class="info-item" style="padding: 2px 0;">
+                  <span>In Transit (Echo Dot):</span>
+                  <a href="javascript:void(0)" onclick="sendQuickPrompt('Where is order 171-8839201-9921?')"><code>171-8839201-9921</code></a>
+                </div>
               </div>
-              <div class="info-item">
-                <span>Expired Return (Warranty):</span>
-                <a href="javascript:void(0)" onclick="sendQuickPrompt('Can I return order ORD-1003?')"><code>ORD-1003</code> (Webcam)</a>
-              </div>
-              <div class="info-item">
-                <span>Processing Order:</span>
-                <a href="javascript:void(0)" onclick="sendQuickPrompt('Check status of ORD-1004')"><code>ORD-1004</code> (New)</a>
+
+              <!-- ApexTech Global -->
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.6rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <strong style="color: #032d60; font-size: 0.8rem;">🛒 ApexTech Official</strong>
+                  <span class="badge badge-primary" style="font-size: 0.65rem;">Default</span>
+                </div>
+                <div class="info-item" style="padding: 2px 0;">
+                  <span>UPS In-Transit:</span>
+                  <a href="javascript:void(0)" onclick="sendQuickPrompt('Where is order ORD-1002?')"><code>ORD-1002</code></a>
+                </div>
+                <div class="info-item" style="padding: 2px 0;">
+                  <span>Delivered Return:</span>
+                  <a href="javascript:void(0)" onclick="sendQuickPrompt('I want to return ORD-1001')"><code>ORD-1001</code></a>
+                </div>
               </div>
             </div>
 
             <div class="side-card">
-              <h3>⚙️ ReAct Agent Status</h3>
+              <h3>⚙️ Agentforce Status</h3>
               <div class="info-item">
-                <span>Active Model:</span>
-                <strong id="agent-active-model">Demo Engine</strong>
+                <span>Atlas Reasoning:</span>
+                <strong style="color: #0176d3;">v3.4 Active</strong>
               </div>
               <div class="info-item">
-                <span>Vector Store:</span>
-                <strong style="color: var(--success);">Online (SQLite RAG)</strong>
+                <span>Ekart & Carrier APIs:</span>
+                <strong style="color: var(--success);">🟢 Live Connected</strong>
               </div>
               <div class="info-item">
-                <span>Tools Available:</span>
-                <strong>5 ReAct Tools</strong>
-              </div>
-              <div class="info-item">
-                <span>Human Escalation:</span>
-                <strong>Tier-2 CRM Active</strong>
+                <span>Multi-Platform Sync:</span>
+                <strong>Flipkart / Amazon / Apex</strong>
               </div>
             </div>
           </aside>
@@ -489,6 +531,7 @@
             <table>
               <thead>
                 <tr>
+                  <th>Platform</th>
                   <th>Order ID</th>
                   <th>Customer</th>
                   <th>Tier</th>
@@ -496,11 +539,11 @@
                   <th>Total Amount</th>
                   <th>Status</th>
                   <th>Carrier Tracking</th>
-                  <th>Return Eligible</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody id="ecom-dash-table-body">
-                <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading orders...</td></tr>
+                <tr><td colspan="9" style="text-align: center; color: var(--text-muted);">Loading orders...</td></tr>
               </tbody>
             </table>
           </div>

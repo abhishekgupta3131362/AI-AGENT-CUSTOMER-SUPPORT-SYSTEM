@@ -1282,14 +1282,14 @@ async function loadEcomDashboard() {
     if (!tbody) return;
 
     if (!data.orders || data.orders.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No orders found</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted);">No orders found</td></tr>`;
       return;
     }
 
     tbody.innerHTML = data.orders.map(o => {
       let itemsStr = "";
       if (Array.isArray(o.items_parsed)) {
-        itemsStr = o.items_parsed.map(i => `${i.name} (x${i.quantity})`).join(", ");
+        itemsStr = o.items_parsed.map(i => `${i.item || i.name} (x${i.qty || i.quantity || 1})`).join(", ");
       } else {
         itemsStr = typeof o.items === "string" ? o.items : JSON.stringify(o.items);
       }
@@ -1298,18 +1298,32 @@ async function loadEcomDashboard() {
       if (o.status === "Delivered") statusBadge = `<span class="badge badge-success">Delivered</span>`;
       else if (o.status === "Return Initiated") statusBadge = `<span class="badge badge-warning">Return Initiated</span>`;
       else if (o.status === "In Transit") statusBadge = `<span class="badge badge-primary">In Transit</span>`;
+      else if (o.status === "Out for Delivery") statusBadge = `<span class="badge badge-success" style="background: #10b981;">Out for Delivery 🚚</span>`;
+
+      const platformName = o.platform || "ApexTech";
+      let platBadge = `<span class="badge" style="background: #0176d3; color: white;">ApexTech</span>`;
+      if (platformName.toLowerCase() === "flipkart") {
+        platBadge = `<span class="badge" style="background: #2874f0; color: white;">⚡ Flipkart</span>`;
+      } else if (platformName.toLowerCase() === "amazon") {
+        platBadge = `<span class="badge" style="background: #ff9900; color: black;">📦 Amazon</span>`;
+      }
+
+      const currSymbol = (o.currency === "INR" || platformName.toLowerCase() === "flipkart") ? "₹" : "$";
 
       return `
         <tr>
-          <td><strong>${escapeHtml(o.id)}</strong></td>
-          <td>${escapeHtml(o.customer_name || "Guest")}</td>
+          <td>${platBadge}</td>
+          <td><code><strong>${escapeHtml(o.id)}</strong></code></td>
+          <td>${escapeHtml(o.customer_name || "Valued Customer")}</td>
           <td><span class="badge badge-secondary">${escapeHtml(o.customer_tier || "Standard")}</span></td>
-          <td style="max-width: 260px; font-size: 0.825rem;">${escapeHtml(itemsStr)}</td>
-          <td><strong>$${Number(o.total_amount).toFixed(2)}</strong></td>
+          <td style="max-width: 250px; font-size: 0.825rem;">${escapeHtml(itemsStr)}</td>
+          <td><strong>${currSymbol}${Number(o.total_amount).toLocaleString()}</strong></td>
           <td>${statusBadge}</td>
-          <td><code>${escapeHtml(o.shipping_carrier || "N/A")} ${escapeHtml(o.tracking_number || "")}</code></td>
+          <td><small><code>${escapeHtml(o.shipping_carrier || "N/A")}<br>${escapeHtml(o.tracking_number || "")}</code></small></td>
           <td>
-            ${o.return_eligible ? '<span style="color: #16a34a; font-weight: 600;">✓ Eligible</span>' : '<span style="color: #dc2626; font-size: 0.8rem;">✕ Expired</span>'}
+            <button class="settings-btn" style="padding: 2px 7px; font-size: 0.75rem; color: #0176d3;" onclick="toggleSubmode('ecom', 'chat'); sendQuickPrompt('Where is order ${escapeHtml(o.id)}?')">
+              ⚡ Track in Chat
+            </button>
           </td>
         </tr>
       `;

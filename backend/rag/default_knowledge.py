@@ -87,5 +87,29 @@ DEFAULT_ARTICLES = [
             "Human specialists are available Monday through Friday 8 AM - 8 PM EST. "
             "Escalated tickets receive a priority response within 2 hours."
         )
+    },
+    {
+        "id": "KB-FLIP-01",
+        "title": "Flipkart 7-Day Replacement Policy & Ekart Logistics Tracking",
+        "category": "Flipkart Marketplace",
+        "content": (
+            "For all orders purchased on Flipkart India (e.g. mobile phones, smartwatches, electronics, and fashion): "
+            "1. Tracking: Shipped via Ekart Logistics with tracking format FMPC... Real-time delivery status, local delivery hub, "
+            "and out-for-delivery OTP are provided directly. "
+            "2. 7-Day Replacement: Electronics and smartphones have a 7-day replacement window for defective, damaged, or dead-on-arrival items. "
+            "3. Delivery OTP: Customers must provide the 4-digit secret delivery OTP to the Ekart delivery executive at the time of delivery. "
+            "4. Returns & Refunds: Refunds for prepaid UPI/Cards are returned within 24-48 hours after courier pickup."
+        )
+    },
+    {
+        "id": "KB-AMZ-01",
+        "title": "Amazon Multi-Platform Order Verification and Return Guidelines",
+        "category": "Amazon Marketplace",
+        "content": (
+            "For orders fulfilled through Amazon.in or Amazon Global: "
+            "1. Order format: 17-digit format (e.g. 171-8839201-9921). "
+            "2. Shipping: Handled by Amazon Transportation Services (ATS). "
+            "3. Tracking & Invoices: Live delivery window and GST tax invoices are available upon providing the Amazon Order ID."
+        )
     }
 ]

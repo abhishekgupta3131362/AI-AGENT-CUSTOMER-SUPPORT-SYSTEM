@@ -65,17 +65,54 @@ class SupportTools:
 
         tracking_info = f"Carrier: {row['shipping_carrier']}, Tracking #: {row['tracking_number']}" if row['tracking_number'] else "Tracking not yet assigned."
         
-        return (
-            f"Order Details for {row['id']}:\n"
-            f"- Customer: {row['customer_name']} ({row['customer_tier']} Tier)\n"
-            f"- Status: {row['status']}\n"
-            f"- Items: {items_desc}\n"
-            f"- Total: ${row['total_amount']:.2f} {row['currency']}\n"
-            f"- Order Date: {row['order_date']}\n"
-            f"- Estimated Delivery: {row['estimated_delivery'] or 'TBD'}\n"
-            f"- Shipping: {tracking_info}\n"
-            f"- 30-Day Return Window Active: {'Yes (Eligible)' if row['is_refundable'] else 'No (Expired - 1-Year Warranty Applies)'}"
-        )
+        keys = row.keys()
+        platform = row["platform"] if "platform" in keys and row["platform"] else "ApexTech"
+        courier_hub = row["courier_hub"] if "courier_hub" in keys and row["courier_hub"] else ""
+        payment_method = row["payment_method"] if "payment_method" in keys and row["payment_method"] else "Prepaid"
+
+        if str(platform).lower() == "flipkart":
+            return (
+                f"🛍️ FLIPKART LIVE ORDER STATUS\n"
+                f"- Order ID: {row['id']}\n"
+                f"- Platform: Flipkart India (Verified Seller)\n"
+                f"- Status: {row['status']}\n"
+                f"- Product: {items_desc}\n"
+                f"- Total Amount: ₹{row['total_amount']:,.2f} {row['currency']} ({payment_method})\n"
+                f"- Logistics Partner: {row['shipping_carrier']} (Tracking / AWB: {row['tracking_number']})\n"
+                f"- Current Location: {courier_hub or 'Ekart Regional Hub'}\n"
+                f"- Delivery Schedule: {row['estimated_delivery'] or 'Today/Tomorrow'}\n"
+                f"- Replacement / Return Window: {'✅ Active (7 Days Flipkart Policy)' if row['is_refundable'] else '❌ Expired'}\n\n"
+                f"Next Steps: Kya aapko is Flipkart order ka official Tax Invoice download karna hai, delivery partner ko call lagani hai, ya return request karni hai?"
+            )
+        elif str(platform).lower() == "amazon":
+            return (
+                f"📦 AMAZON LIVE ORDER STATUS\n"
+                f"- Order ID: {row['id']}\n"
+                f"- Platform: Amazon.in (Fulfilled by Amazon)\n"
+                f"- Status: {row['status']}\n"
+                f"- Product: {items_desc}\n"
+                f"- Total Amount: ₹{row['total_amount']:,.2f} {row['currency']} ({payment_method})\n"
+                f"- Logistics: {row['shipping_carrier']} (Tracking: {row['tracking_number']})\n"
+                f"- Fulfillment Center: {courier_hub or 'Amazon Fulfilment Center'}\n"
+                f"- Estimated Delivery: {row['estimated_delivery'] or 'TBD'}\n"
+                f"- Return Status: {'✅ Eligible for Return' if row['is_refundable'] else '❌ Non-Returnable'}\n\n"
+                f"Next Steps: Kya aapko is order ka invoice chahiye ya delivery address update karna hai?"
+            )
+        else:
+            return (
+                f"Order Details for {row['id']}:\n"
+                f"- Platform: {platform}\n"
+                f"- Customer: {row['customer_name']} ({row['customer_tier']} Tier)\n"
+                f"- Status: {row['status']}\n"
+                f"- Items: {items_desc}\n"
+                f"- Total: ${row['total_amount']:.2f} {row['currency']}\n"
+                f"- Order Date: {row['order_date']}\n"
+                f"- Estimated Delivery: {row['estimated_delivery'] or 'TBD'}\n"
+                f"- Shipping: {tracking_info}\n"
+                f"- Hub / Location: {courier_hub}\n"
+                f"- 30-Day Return Window Active: {'Yes (Eligible)' if row['is_refundable'] else 'No (Expired - 1-Year Warranty Applies)'}\n\n"
+                f"Next Steps: Let me know if you would like me to help with invoice generation or return processing!"
+            )
 
     def process_refund_return(self, order_id: str, reason: str = "Customer requested return") -> str:
         """
