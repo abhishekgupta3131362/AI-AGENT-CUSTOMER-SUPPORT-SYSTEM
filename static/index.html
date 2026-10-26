@@ -28,44 +28,110 @@
 
   <!-- Salesforce SLDS Navigation Header -->
   <header class="navbar">
-    <div class="brand">
-      <div class="brand-icon" style="background: linear-gradient(135deg, #0176d3 0%, #00a1e0 100%); font-size: 1.4rem;">☁️</div>
-      <div>
-        <div style="display: flex; align-items: center; gap: 6px;">
-          <span style="font-weight: 800; font-size: 1.2rem; color: #032d60; letter-spacing: -0.3px;">Agentforce</span>
-          <span style="font-size: 0.68rem; background: #e0f2fe; color: #0284c7; font-weight: 700; padding: 2px 7px; border-radius: 4px; text-transform: uppercase;">Service Cloud</span>
+    <div style="display: flex; align-items: center; gap: 0.85rem;">
+      <!-- Sidebar Toggle Hamburger Button -->
+      <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="Toggle Navigation Sidebar">
+        <span>☰</span>
+      </button>
+
+      <!-- Brand -->
+      <div class="brand" onclick="switchView('overview')" style="cursor: pointer;">
+        <div class="brand-icon" style="background: linear-gradient(135deg, #0176d3 0%, #00a1e0 100%); font-size: 1.4rem;">☁️</div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-weight: 800; font-size: 1.2rem; color: #032d60; letter-spacing: -0.3px;">Agentforce</span>
+            <span style="font-size: 0.68rem; background: #e0f2fe; color: #0284c7; font-weight: 700; padding: 2px 7px; border-radius: 4px; text-transform: uppercase;">Service Cloud</span>
+          </div>
+          <small style="font-size: 0.7rem; color: #54698d; font-weight: 500; display: block;">Autonomous Customer Service AI</small>
         </div>
-        <small style="font-size: 0.7rem; color: #54698d; font-weight: 500; display: block;">Autonomous Customer Service AI by Salesforce Design</small>
       </div>
     </div>
 
-    <div class="nav-tabs" style="overflow-x: auto; max-width: 820px;">
-      <button class="nav-tab active" id="tab-overview" onclick="switchView('overview')">
-        ⚡ Platform Overview
+    <!-- Center: Modern Salesforce App Launcher / Dashboard Switcher (No Horizontal Scrollbar) -->
+    <div class="dashboard-switcher" id="dashboard-switcher">
+      <button class="dashboard-switcher-btn" id="dashboard-switcher-btn" onclick="toggleDashboardDropdown(event)">
+        <span class="waffle-icon">⠿</span>
+        <span id="current-dashboard-icon">⚡</span>
+        <span id="current-dashboard-label">Platform Overview</span>
+        <span class="dropdown-arrow">▾</span>
       </button>
-      <button class="nav-tab" id="tab-ecommerce" onclick="switchView('ecommerce')">
-        🛍️ E-Commerce
-      </button>
-      <button class="nav-tab" id="tab-hotel" onclick="switchView('hotel')">
-        🏨 Hospitality
-      </button>
-      <button class="nav-tab" id="tab-voice" onclick="switchView('voice')">
-        🎙️ Voice Telephony
-      </button>
-      <button class="nav-tab" id="tab-whatsapp" onclick="switchView('whatsapp')">
-        💬 WhatsApp
-      </button>
-      <button class="nav-tab" id="tab-saas" onclick="switchView('saas')">
-        💻 SaaS Platform
-      </button>
-      <button class="nav-tab" id="tab-builder" onclick="switchView('builder')">
-        🛠️ Agentforce Builder
-      </button>
-      <button class="nav-tab" id="tab-admin" onclick="switchView('admin')">
-        📊 Service Console
-      </button>
+
+      <!-- App Launcher Dropdown Popover -->
+      <div class="dashboard-dropdown-menu" id="dashboard-dropdown-menu">
+        <div class="dropdown-header">
+          <div>
+            <div style="font-weight: 800; color: #032d60; font-size: 0.85rem;">🎯 Dedicated Agent Dashboards</div>
+            <div style="font-size: 0.72rem; color: #54698d;">Switch to a standalone workspace</div>
+          </div>
+          <span style="font-size: 0.7rem; background: #e0f2fe; color: #0176d3; font-weight: 700; padding: 2px 7px; border-radius: 4px;">8 Solutions</span>
+        </div>
+        <div class="dashboard-menu-grid">
+          <div class="dash-menu-item active" data-view="overview" onclick="switchView('overview')">
+            <span class="dash-menu-icon">⚡</span>
+            <div class="dash-menu-text">
+              <strong>Platform Overview</strong>
+              <small>Master Hub & ROI</small>
+            </div>
+          </div>
+          <div class="dash-menu-item" data-view="ecommerce" onclick="switchView('ecommerce')">
+            <span class="dash-menu-icon">🛍️</span>
+            <div class="dash-menu-text">
+              <strong>E-Commerce Agent</strong>
+              <small>Flipkart (Ekart) & Amazon</small>
+            </div>
+            <span class="sidebar-item-badge badge-success">Live</span>
+          </div>
+          <div class="dash-menu-item" data-view="hotel" onclick="switchView('hotel')">
+            <span class="dash-menu-icon">🏨</span>
+            <div class="dash-menu-text">
+              <strong>Hospitality Resort</strong>
+              <small>Bookings & Concierge</small>
+            </div>
+            <span class="sidebar-item-badge badge-info">96%</span>
+          </div>
+          <div class="dash-menu-item" data-view="voice" onclick="switchView('voice')">
+            <span class="dash-menu-icon">🎙️</span>
+            <div class="dash-menu-text">
+              <strong>Voice Telephony</strong>
+              <small>Live Speech Call AI</small>
+            </div>
+            <span class="sidebar-item-badge badge-warning">Voice</span>
+          </div>
+          <div class="dash-menu-item" data-view="whatsapp" onclick="switchView('whatsapp')">
+            <span class="dash-menu-icon">💬</span>
+            <div class="dash-menu-text">
+              <strong>WhatsApp Commerce</strong>
+              <small>Catalog & Quick Ordering</small>
+            </div>
+            <span class="sidebar-item-badge badge-success">91%</span>
+          </div>
+          <div class="dash-menu-item" data-view="saas" onclick="switchView('saas')">
+            <span class="dash-menu-icon">💻</span>
+            <div class="dash-menu-text">
+              <strong>SaaS Developer Platform</strong>
+              <small>Fin AI Diagnostics & Docs</small>
+            </div>
+            <span class="sidebar-item-badge badge-info">Fin</span>
+          </div>
+          <div class="dash-menu-item" data-view="builder" onclick="switchView('builder')">
+            <span class="dash-menu-icon">🛠️</span>
+            <div class="dash-menu-text">
+              <strong>Agentforce Builder</strong>
+              <small>Topics & Guardrails Studio</small>
+            </div>
+          </div>
+          <div class="dash-menu-item" data-view="admin" onclick="switchView('admin')">
+            <span class="dash-menu-icon">📊</span>
+            <div class="dash-menu-text">
+              <strong>Service Console</strong>
+              <small>Unified Tickets & Analytics</small>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
+    <!-- Right Controls -->
     <div class="nav-right">
       <div class="provider-pill" id="active-provider-badge" style="background: #e0f2fe; color: #0176d3; border-color: #bae0fd;">
         <span class="agent-status-dot" style="background: #0176d3;"></span>
@@ -77,8 +143,98 @@
     </div>
   </header>
 
-  <!-- Main Container -->
-  <main class="container">
+  <!-- App Shell: Left Navigation Sidebar + Dedicated View Dashboards -->
+  <div class="app-shell">
+
+    <!-- Left Navigation Sidebar -->
+    <aside class="app-sidebar" id="app-sidebar">
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">COMMAND CENTER</div>
+        <button class="sidebar-item active" id="side-overview" onclick="switchView('overview')" title="Platform Overview Hub">
+          <span class="sidebar-item-icon">⚡</span>
+          <div class="sidebar-item-text-wrap">
+            <span class="sidebar-item-text">Platform Overview</span>
+            <span class="sidebar-item-sub">Executive Hub & Metrics</span>
+          </div>
+        </button>
+        <button class="sidebar-item" id="side-admin" onclick="switchView('admin')" title="Service Console & Analytics">
+          <span class="sidebar-item-icon">📊</span>
+          <div class="sidebar-item-text-wrap">
+            <span class="sidebar-item-text">Service Console</span>
+            <span class="sidebar-item-sub">Tickets & KPIs</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">SEPARATE DASHBOARDS</div>
+        <button class="sidebar-item" id="side-ecommerce" onclick="switchView('ecommerce')" title="E-Commerce Agent (Flipkart & Amazon)">
+          <span class="sidebar-item-icon">🛍️</span>
+          <div class="sidebar-item-text-wrap">
+            <span class="sidebar-item-text">E-Commerce Agent</span>
+            <span class="sidebar-item-sub">Flipkart (Ekart) & Amazon</span>
+          </div>
+          <span class="sidebar-item-badge badge-success">Live</span>
+        </button>
+
+        <button class="sidebar-item" id="side-hotel" onclick="switchView('hotel')" title="Hospitality Resort Concierge">
+          <span class="sidebar-item-icon">🏨</span>
+          <div class="sidebar-item-text-wrap">
+            <span class="sidebar-item-text">Hospitality Resort</span>
+            <span class="sidebar-item-sub">Bookings & Amenities</span>
+          </div>
+          <span class="sidebar-item-badge badge-info">96%</span>
+        </button>
+
+        <button class="sidebar-item" id="side-voice" onclick="switchView('voice')" title="Voice Telephony Agent">
+          <span class="sidebar-item-icon">🎙️</span>
+          <div class="sidebar-item-text-wrap">
+            <span class="sidebar-item-text">Voice Telephony</span>
+            <span class="sidebar-item-sub">Phone Call Operator</span>
+          </div>
+          <span class="sidebar-item-badge badge-warning">Voice</span>
+        </button>
+
+        <button class="sidebar-item" id="side-whatsapp" onclick="switchView('whatsapp')" title="WhatsApp Commerce">
+          <span class="sidebar-item-icon">💬</span>
+          <div class="sidebar-item-text-wrap">
+            <span class="sidebar-item-text">WhatsApp Commerce</span>
+            <span class="sidebar-item-sub">Catalog & Quick Ordering</span>
+          </div>
+          <span class="sidebar-item-badge badge-success">91%</span>
+        </button>
+
+        <button class="sidebar-item" id="side-saas" onclick="switchView('saas')" title="SaaS Developer Platform Support">
+          <span class="sidebar-item-icon">💻</span>
+          <div class="sidebar-item-text-wrap">
+            <span class="sidebar-item-text">SaaS Platform Support</span>
+            <span class="sidebar-item-sub">Fin Error Diagnostics</span>
+          </div>
+          <span class="sidebar-item-badge badge-info">Fin</span>
+        </button>
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">AGENTFORCE STUDIO</div>
+        <button class="sidebar-item" id="side-builder" onclick="switchView('builder')" title="Topic & Action Builder Studio">
+          <span class="sidebar-item-icon">🛠️</span>
+          <div class="sidebar-item-text-wrap">
+            <span class="sidebar-item-text">Topic & Action Builder</span>
+            <span class="sidebar-item-sub">Custom ReAct Designer</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-trust-pill">
+          <strong>🛡️ Einstein Trust Layer</strong>
+          <small>Zero Data Retention Shield</small>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content-wrapper">
 
     <!-- VIEW 0: SALESFORCE AGENTFORCE ENTERPRISE OVERVIEW & HERO -->
     <section id="view-overview" class="view-section active">
@@ -146,7 +302,7 @@
             <h2 style="font-size: 1.4rem; font-weight: 800; color: #032d60;">Explore Agentforce Customer Service Archetypes</h2>
             <p style="font-size: 0.875rem; color: #54698d;">Pre-configured autonomous agents equipped with domain actions, RAG knowledge retrieval, and CRM grounding.</p>
           </div>
-          <span style="font-size: 0.8rem; color: #0176d3; font-weight: 600;">5 Autonomous Solutions Available</span>
+          <span style="font-size: 0.8rem; color: #0176d3; font-weight: 700;">7 Dedicated Dashboards Available</span>
         </div>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
@@ -159,11 +315,11 @@
               </div>
               <h3 style="font-size: 1rem; font-weight: 700; color: #032d60; margin-bottom: 0.35rem;">E-Commerce Service Agent</h3>
               <p style="font-size: 0.8rem; color: #54698d; line-height: 1.45; margin-bottom: 0.75rem;">
-                Tracks packages, checks FedEx/UPS carrier telemetry, authorizes returns, and generates instant RMA numbers.
+                Tracks packages, checks Ekart/ATS/FedEx carrier telemetry, authorizes returns, and generates instant RMA numbers.
               </p>
             </div>
             <button class="sf-btn-primary" style="width: 100%; justify-content: center; font-size: 0.825rem; padding: 0.45rem;" onclick="switchView('ecommerce')">
-              Open E-Commerce &bull;
+              Open E-Commerce Dashboard &bull;
             </button>
           </div>
 
@@ -179,7 +335,7 @@
               </p>
             </div>
             <button class="sf-btn-primary" style="width: 100%; justify-content: center; font-size: 0.825rem; padding: 0.45rem;" onclick="switchView('hotel')">
-              Open Resort Concierge &bull;
+              Open Resort Dashboard &bull;
             </button>
           </div>
 
@@ -195,7 +351,7 @@
               </p>
             </div>
             <button class="sf-btn-primary" style="width: 100%; justify-content: center; font-size: 0.825rem; padding: 0.45rem;" onclick="switchView('voice')">
-              Open Voice Phone &bull;
+              Open Voice Dashboard &bull;
             </button>
           </div>
 
@@ -211,7 +367,7 @@
               </p>
             </div>
             <button class="sf-btn-primary" style="width: 100%; justify-content: center; font-size: 0.825rem; padding: 0.45rem;" onclick="switchView('whatsapp')">
-              Open WhatsApp &bull;
+              Open WhatsApp Dashboard &bull;
             </button>
           </div>
 
@@ -227,7 +383,39 @@
               </p>
             </div>
             <button class="sf-btn-primary" style="width: 100%; justify-content: center; font-size: 0.825rem; padding: 0.45rem;" onclick="switchView('saas')">
-              Open DevConsole &bull;
+              Open Developer Dashboard &bull;
+            </button>
+          </div>
+
+          <div class="topic-item-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span style="font-size: 1.6rem;">🛠️</span>
+                <span class="badge" style="background: #e0f2fe; color: #0176d3;">Studio</span>
+              </div>
+              <h3 style="font-size: 1rem; font-weight: 700; color: #032d60; margin-bottom: 0.35rem;">Topic & Action Builder</h3>
+              <p style="font-size: 0.8rem; color: #54698d; line-height: 1.45; margin-bottom: 0.75rem;">
+                Design agent instructions, topic boundaries, tool definitions, and Einstein Trust Layer toxicity guardrails.
+              </p>
+            </div>
+            <button class="sf-btn-primary" style="width: 100%; justify-content: center; font-size: 0.825rem; padding: 0.45rem;" onclick="switchView('builder')">
+              Open Builder Studio &bull;
+            </button>
+          </div>
+
+          <div class="topic-item-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span style="font-size: 1.6rem;">📊</span>
+                <span class="badge" style="background: #f1f5f9; color: #032d60;">Analytics</span>
+              </div>
+              <h3 style="font-size: 1rem; font-weight: 700; color: #032d60; margin-bottom: 0.35rem;">Service Console & CRM</h3>
+              <p style="font-size: 0.8rem; color: #54698d; line-height: 1.45; margin-bottom: 0.75rem;">
+                Unified contact center console tracking open escalations, CSAT sentiment scores, and autonomous deflections.
+              </p>
+            </div>
+            <button class="sf-btn-primary" style="width: 100%; justify-content: center; font-size: 0.825rem; padding: 0.45rem;" onclick="switchView('admin')">
+              Open Service Console &bull;
             </button>
           </div>
 
@@ -306,6 +494,24 @@
 
     <!-- VIEW 1: E-COMMERCE AGENT VIEW (Amazon / Flipkart Style) -->
     <section id="view-ecommerce" class="view-section">
+      
+      <!-- Dedicated Dashboard Top Breadcrumb Bar -->
+      <div class="dashboard-breadcrumb-bar">
+        <div class="breadcrumb-left">
+          <button class="breadcrumb-back-btn" onclick="switchView('overview')">
+            ← All Dashboards Hub
+          </button>
+          <div class="breadcrumb-title">
+            <span class="breadcrumb-dot"></span>
+            <span>🛍️ E-Commerce Autonomous Agent Dashboard</span>
+          </div>
+        </div>
+        <div>
+          <button class="breadcrumb-switch-btn" onclick="toggleDashboardDropdown(event)">
+            ⠿ Switch Dashboard ▾
+          </button>
+        </div>
+      </div>
       
       <!-- Submode Bar -->
       <div class="submode-bar">
@@ -586,6 +792,24 @@
 
     <!-- VIEW 2: HOTEL & HOSPITALITY AGENT VIEW -->
     <section id="view-hotel" class="view-section">
+      
+      <!-- Dedicated Dashboard Top Breadcrumb Bar -->
+      <div class="dashboard-breadcrumb-bar">
+        <div class="breadcrumb-left">
+          <button class="breadcrumb-back-btn" onclick="switchView('overview')">
+            ← All Dashboards Hub
+          </button>
+          <div class="breadcrumb-title">
+            <span class="breadcrumb-dot"></span>
+            <span>🏨 Grand Apex Hospitality Concierge Dashboard</span>
+          </div>
+        </div>
+        <div>
+          <button class="breadcrumb-switch-btn" onclick="toggleDashboardDropdown(event)">
+            ⠿ Switch Dashboard ▾
+          </button>
+        </div>
+      </div>
       <!-- Hotel Submode Toggle Bar -->
       <div class="submode-bar">
         <button class="submode-pill active" id="pill-hotel-chat" onclick="toggleSubmode('hotel', 'chat')">
@@ -772,6 +996,24 @@
 
     <!-- VIEW 3: AI VOICE SUPPORT AGENT VIEW (Phone Call Simulator) -->
     <section id="view-voice" class="view-section">
+      
+      <!-- Dedicated Dashboard Top Breadcrumb Bar -->
+      <div class="dashboard-breadcrumb-bar">
+        <div class="breadcrumb-left">
+          <button class="breadcrumb-back-btn" onclick="switchView('overview')">
+            ← All Dashboards Hub
+          </button>
+          <div class="breadcrumb-title">
+            <span class="breadcrumb-dot"></span>
+            <span>🎙️ ApexVoice Telephony Call Center Dashboard</span>
+          </div>
+        </div>
+        <div>
+          <button class="breadcrumb-switch-btn" onclick="toggleDashboardDropdown(event)">
+            ⠿ Switch Dashboard ▾
+          </button>
+        </div>
+      </div>
       <!-- Voice Submode Toggle Bar -->
       <div class="submode-bar">
         <button class="submode-pill active" id="pill-voice-call" onclick="toggleSubmode('voice', 'call')">
@@ -917,6 +1159,24 @@
 
     <!-- VIEW 4: WHATSAPP CUSTOMER SUPPORT AGENT VIEW -->
     <section id="view-whatsapp" class="view-section">
+      
+      <!-- Dedicated Dashboard Top Breadcrumb Bar -->
+      <div class="dashboard-breadcrumb-bar">
+        <div class="breadcrumb-left">
+          <button class="breadcrumb-back-btn" onclick="switchView('overview')">
+            ← All Dashboards Hub
+          </button>
+          <div class="breadcrumb-title">
+            <span class="breadcrumb-dot"></span>
+            <span>💬 WhatsApp Business & Commerce Dashboard</span>
+          </div>
+        </div>
+        <div>
+          <button class="breadcrumb-switch-btn" onclick="toggleDashboardDropdown(event)">
+            ⠿ Switch Dashboard ▾
+          </button>
+        </div>
+      </div>
       <!-- WhatsApp Submode Toggle Bar -->
       <div class="submode-bar">
         <button class="submode-pill active" id="pill-wa-chat" onclick="toggleSubmode('wa', 'chat')">
@@ -1069,6 +1329,24 @@
 
     <!-- VIEW 5: SAAS TECHNICAL SUPPORT AGENT VIEW (Intercom / Fin Style) -->
     <section id="view-saas" class="view-section">
+      
+      <!-- Dedicated Dashboard Top Breadcrumb Bar -->
+      <div class="dashboard-breadcrumb-bar">
+        <div class="breadcrumb-left">
+          <button class="breadcrumb-back-btn" onclick="switchView('overview')">
+            ← All Dashboards Hub
+          </button>
+          <div class="breadcrumb-title">
+            <span class="breadcrumb-dot"></span>
+            <span>💻 Fin SaaS Developer Platform Dashboard</span>
+          </div>
+        </div>
+        <div>
+          <button class="breadcrumb-switch-btn" onclick="toggleDashboardDropdown(event)">
+            ⠿ Switch Dashboard ▾
+          </button>
+        </div>
+      </div>
       <!-- SaaS Submode Toggle Bar -->
       <div class="submode-bar">
         <button class="submode-pill active" id="pill-saas-chat" onclick="toggleSubmode('saas', 'chat')">
@@ -1258,6 +1536,24 @@
     <!-- VIEW 6: AGENTFORCE BUILDER STUDIO & EINSTEIN TRUST LAYER -->
     <section id="view-builder" class="view-section">
       
+      <!-- Dedicated Dashboard Top Breadcrumb Bar -->
+      <div class="dashboard-breadcrumb-bar">
+        <div class="breadcrumb-left">
+          <button class="breadcrumb-back-btn" onclick="switchView('overview')">
+            ← All Dashboards Hub
+          </button>
+          <div class="breadcrumb-title">
+            <span class="breadcrumb-dot"></span>
+            <span>🛠️ Agentforce Topic & Action Builder Studio</span>
+          </div>
+        </div>
+        <div>
+          <button class="breadcrumb-switch-btn" onclick="toggleDashboardDropdown(event)">
+            ⠿ Switch Dashboard ▾
+          </button>
+        </div>
+      </div>
+      
       <!-- Builder Header -->
       <div class="submode-bar" style="background: linear-gradient(90deg, #f8fafc 0%, #e0f2fe 100%);">
         <div>
@@ -1374,6 +1670,24 @@
 
     <!-- VIEW 2: ADMIN & AGENT CRM DASHBOARD -->
     <section id="view-admin" class="view-section">
+      
+      <!-- Dedicated Dashboard Top Breadcrumb Bar -->
+      <div class="dashboard-breadcrumb-bar">
+        <div class="breadcrumb-left">
+          <button class="breadcrumb-back-btn" onclick="switchView('overview')">
+            ← All Dashboards Hub
+          </button>
+          <div class="breadcrumb-title">
+            <span class="breadcrumb-dot"></span>
+            <span>📊 Service Console & Unified Enterprise Analytics</span>
+          </div>
+        </div>
+        <div>
+          <button class="breadcrumb-switch-btn" onclick="toggleDashboardDropdown(event)">
+            ⠿ Switch Dashboard ▾
+          </button>
+        </div>
+      </div>
       
       <!-- Metrics Overview -->
       <div class="metrics-grid">
@@ -1596,6 +1910,7 @@
     </section>
 
   </main>
+</div>
 
   <!-- MODAL: Settings & LLM Configuration -->
   <div class="modal-overlay" id="settings-modal">

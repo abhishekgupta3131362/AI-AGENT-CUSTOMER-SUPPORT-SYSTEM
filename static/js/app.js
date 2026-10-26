@@ -29,15 +29,78 @@ document.addEventListener("DOMContentLoaded", () => {
   updateRoiCalculation();
 });
 
-// View Navigation across Agentforce Platform + 5 Agent Types + Builder + Admin
+// Dashboard Metadata for App Launcher and Navigation
+const DASHBOARD_METADATA = {
+  overview: { name: "Platform Overview", icon: "⚡" },
+  ecommerce: { name: "E-Commerce Agent", icon: "🛍️" },
+  hotel: { name: "Hospitality Resort", icon: "🏨" },
+  voice: { name: "Voice Telephony Agent", icon: "🎙️" },
+  whatsapp: { name: "WhatsApp Commerce", icon: "💬" },
+  saas: { name: "SaaS Platform Support", icon: "💻" },
+  builder: { name: "Agentforce Builder", icon: "🛠️" },
+  admin: { name: "Service Console & CRM", icon: "📊" }
+};
+
+function toggleSidebar() {
+  const sb = document.getElementById("app-sidebar");
+  if (!sb) return;
+  sb.classList.toggle("collapsed");
+  try {
+    localStorage.setItem("agentforce_sidebar_collapsed", sb.classList.contains("collapsed") ? "true" : "false");
+  } catch (e) {}
+}
+
+function toggleDashboardDropdown(event) {
+  if (event) event.stopPropagation();
+  const menu = document.getElementById("dashboard-dropdown-menu");
+  if (menu) menu.classList.toggle("show");
+}
+
+function closeDashboardDropdown() {
+  const menu = document.getElementById("dashboard-dropdown-menu");
+  if (menu) menu.classList.remove("show");
+}
+
+document.addEventListener("click", (e) => {
+  const switcher = document.getElementById("dashboard-switcher");
+  if (switcher && !switcher.contains(e.target)) {
+    closeDashboardDropdown();
+  }
+});
+
+// Restore sidebar state
+try {
+  if (localStorage.getItem("agentforce_sidebar_collapsed") === "true") {
+    const sb = document.getElementById("app-sidebar");
+    if (sb) sb.classList.add("collapsed");
+  }
+} catch (e) {}
+
+// View Navigation across Agentforce Platform + Dedicated Standalone Dashboards
 function switchView(view) {
   const allViews = ["overview", "ecommerce", "hotel", "voice", "whatsapp", "saas", "builder", "admin"];
   allViews.forEach(v => {
     const el = document.getElementById(`view-${v}`);
     const tab = document.getElementById(`tab-${v}`);
+    const side = document.getElementById(`side-${v}`);
     if (el) el.classList.toggle("active", v === view);
     if (tab) tab.classList.toggle("active", v === view);
+    if (side) side.classList.toggle("active", v === view);
   });
+
+  // Update App Launcher dropdown active item
+  document.querySelectorAll(".dash-menu-item").forEach(item => {
+    item.classList.toggle("active", item.getAttribute("data-view") === view);
+  });
+
+  // Update App Launcher header button
+  const meta = DASHBOARD_METADATA[view] || { name: "Platform Overview", icon: "⚡" };
+  const curLabel = document.getElementById("current-dashboard-label");
+  const curIcon = document.getElementById("current-dashboard-icon");
+  if (curLabel) curLabel.innerText = meta.name;
+  if (curIcon) curIcon.innerText = meta.icon;
+
+  closeDashboardDropdown();
 
   activeAgentType = (view === "admin" || view === "overview" || view === "builder") ? "ecommerce" : view;
 
@@ -65,6 +128,10 @@ function switchView(view) {
     const p = document.getElementById("saas-dash-panel");
     if (p && p.style.display !== "none") loadSaasDashboard();
   }
+
+  // Smooth scroll to top of view
+  const mainWrapper = document.querySelector(".main-content-wrapper");
+  if (mainWrapper) mainWrapper.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function startCallTimer() {
