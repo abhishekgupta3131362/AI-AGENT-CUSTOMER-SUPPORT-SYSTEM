@@ -1,5 +1,8 @@
 import json
-import requests
+try:
+    import requests
+except ImportError:
+    requests = None
 from typing import Generator, Optional
 from backend.llm.base import BaseLLMProvider
 from backend.config import Config

@@ -4,7 +4,10 @@ import hashlib
 import json
 import numpy as np
 from typing import List, Optional
-import requests
+try:
+    import requests
+except ImportError:
+    requests = None
 from backend.config import Config
 
 class EmbeddingEngine:
