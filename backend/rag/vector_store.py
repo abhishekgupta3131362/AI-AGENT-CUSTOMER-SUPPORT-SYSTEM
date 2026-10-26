@@ -107,6 +107,11 @@ class VectorStore:
         execute_db("DELETE FROM knowledge_documents WHERE id LIKE ?", (f"{doc_id}%",))
         return True
 
+    def get_total_documents(self) -> int:
+        """Returns count of distinct knowledge documents."""
+        row = query_db("SELECT COUNT(*) as cnt FROM knowledge_documents WHERE chunk_index = 0", one=True)
+        return row["cnt"] if row else 0
+
     def reindex_all(self):
         """Re-computes embeddings for all documents stored in the database."""
         docs = query_db("SELECT id, title, category, content FROM knowledge_documents WHERE chunk_index = 0")

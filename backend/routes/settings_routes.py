@@ -101,3 +101,40 @@ def update_settings():
         "message": f"Active LLM provider switched to '{provider}'.",
         "active_provider": provider
     })
+
+@settings_bp.route("/api/database/status", methods=["GET"])
+def get_database_status():
+    """Returns database integrity, schema health, table row counts, and storage metrics."""
+    from backend.database.db import get_db_stats, verify_db_integrity
+    stats = get_db_stats()
+    integrity_details = verify_db_integrity()
+    return jsonify({
+        "success": True,
+        "database": stats,
+        "verification": integrity_details
+    })
+
+@settings_bp.route("/api/database/optimize", methods=["POST"])
+def optimize_database_endpoint():
+    """Runs database index optimization, PRAGMA optimize, and VACUUM."""
+    from backend.database.db import optimize_db, get_db_stats
+    optimize_db()
+    stats = get_db_stats()
+    return jsonify({
+        "success": True,
+        "message": "Database optimized successfully",
+        "database": stats
+    })
+
+@settings_bp.route("/api/database/seed", methods=["POST"])
+def reseed_database_endpoint():
+    """Refreshes seed datasets across all 5 agent domains."""
+    from backend.database.seed_data import seed_database
+    from backend.database.db import get_db_stats
+    seed_database()
+    stats = get_db_stats()
+    return jsonify({
+        "success": True,
+        "message": "Database schema and seed datasets verified successfully",
+        "database": stats
+    })

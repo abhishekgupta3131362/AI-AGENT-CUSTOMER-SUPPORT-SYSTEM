@@ -38,13 +38,40 @@ def create_app():
     app.register_blueprint(agentforce_bp)
     app.register_blueprint(evaluation_bp)
 
-    # Health check endpoint
+    # Comprehensive System & Database Health Check Endpoint
     @app.route("/api/health", methods=["GET"])
     def health_check():
+        from backend.database.db import get_db_stats
+        from backend.rag.vector_store import VectorStore
+        try:
+            db_stats = get_db_stats()
+            db_healthy = db_stats.get("integrity") == "ok"
+        except Exception as e:
+            db_stats = {"error": str(e)}
+            db_healthy = False
+
+        try:
+            vs = VectorStore()
+            indexed_docs = vs.get_total_documents()
+        except Exception:
+            indexed_docs = 0
+
+        overall_status = "healthy" if db_healthy else "degraded"
         return jsonify({
-            "status": "healthy",
+            "status": overall_status,
             "system": "ApexTech AI Customer Support Agent",
-            "active_provider": Config.DEFAULT_LLM_PROVIDER
+            "active_provider": Config.DEFAULT_LLM_PROVIDER,
+            "database": {
+                "connected": db_healthy,
+                "integrity": db_stats.get("integrity"),
+                "journal_mode": db_stats.get("journal_mode"),
+                "total_tables": db_stats.get("tables_count", 0),
+                "size_kb": db_stats.get("size_kb", 0),
+                "tables": db_stats.get("tables", {})
+            },
+            "vector_store": {
+                "indexed_documents": indexed_docs
+            }
         })
 
     # Serve Single Page Application frontend

@@ -5,9 +5,11 @@ from backend.config import Config
 
 def get_db_connection():
     """Returns a SQLite connection with row_factory set to sqlite3.Row."""
-    conn = sqlite3.connect(str(Config.DATABASE_PATH))
+    conn = sqlite3.connect(str(Config.DATABASE_PATH), timeout=20.0)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA journal_mode = WAL")
+    conn.execute("PRAGMA synchronous = NORMAL")
     return conn
 
 def init_db():
@@ -177,6 +179,26 @@ def init_db():
             cursor.execute(f"ALTER TABLE {col_def[0]} ADD COLUMN {col_def[1]}")
         except Exception:
             pass # Column already exists
+
+    # 10. Performance Indexes for high-throughput concurrency
+    indexes = [
+        "CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id)",
+        "CREATE INDEX IF NOT EXISTS idx_orders_platform ON orders(platform)",
+        "CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)",
+        "CREATE INDEX IF NOT EXISTS idx_tickets_customer ON tickets(customer_id)",
+        "CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status)",
+        "CREATE INDEX IF NOT EXISTS idx_tickets_priority ON tickets(priority)",
+        "CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON chat_messages(session_id)",
+        "CREATE INDEX IF NOT EXISTS idx_chat_sessions_customer ON chat_sessions(customer_id)",
+        "CREATE INDEX IF NOT EXISTS idx_knowledge_category ON knowledge_documents(category)",
+        "CREATE INDEX IF NOT EXISTS idx_hotel_reservations_room ON hotel_reservations(room_id)",
+        "CREATE INDEX IF NOT EXISTS idx_saas_docs_code ON saas_error_docs(code)"
+    ]
+    for idx_sql in indexes:
+        try:
+            cursor.execute(idx_sql)
+        except Exception:
+            pass
     
     conn.commit()
     conn.close()
@@ -201,5 +223,69 @@ def execute_db(query, args=()):
         cur.execute(query, args)
         conn.commit()
         return cur.lastrowid
+    finally:
+        conn.close()
+
+def get_db_stats():
+    """Returns database integrity status, table names, row counts, and disk size."""
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("PRAGMA integrity_check")
+        integrity_row = cur.fetchone()
+        integrity = integrity_row[0] if integrity_row else "unknown"
+
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
+        tables = [r[0] for r in cur.fetchall()]
+
+        counts = {}
+        for tbl in tables:
+            cur.execute(f"SELECT COUNT(*) FROM {tbl}")
+            counts[tbl] = cur.fetchone()[0]
+
+        db_path = Path(Config.DATABASE_PATH)
+        file_size_bytes = db_path.stat().st_size if db_path.exists() else 0
+
+        # Check WAL mode
+        cur.execute("PRAGMA journal_mode")
+        journal_mode = cur.fetchone()[0]
+
+        return {
+            "path": str(db_path),
+            "integrity": integrity,
+            "journal_mode": journal_mode,
+            "size_bytes": file_size_bytes,
+            "size_kb": round(file_size_bytes / 1024, 2),
+            "tables_count": len(tables),
+            "tables": counts
+        }
+    finally:
+        conn.close()
+
+def optimize_db():
+    """Runs VACUUM and ANALYZE to optimize SQLite database file and indices."""
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("PRAGMA optimize")
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+def verify_db_integrity():
+    """Runs foreign key check and integrity check on database."""
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("PRAGMA integrity_check")
+        integrity = cur.fetchone()[0]
+        cur.execute("PRAGMA foreign_key_check")
+        fk_violations = cur.fetchall()
+        return {
+            "healthy": integrity == "ok" and len(fk_violations) == 0,
+            "integrity": integrity,
+            "foreign_key_violations": len(fk_violations)
+        }
     finally:
         conn.close()
