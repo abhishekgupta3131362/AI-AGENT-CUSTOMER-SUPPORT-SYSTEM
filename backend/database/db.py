@@ -3,11 +3,9 @@ import json
 from pathlib import Path
 from backend.config import Config
 
-DB_FILE = Config.DATABASE_PATH
-
 def get_db_connection():
     """Returns a SQLite connection with row_factory set to sqlite3.Row."""
-    conn = sqlite3.connect(str(DB_FILE))
+    conn = sqlite3.connect(str(Config.DATABASE_PATH))
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn

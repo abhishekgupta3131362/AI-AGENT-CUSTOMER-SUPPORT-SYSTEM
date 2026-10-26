@@ -12,7 +12,19 @@ class Config:
     PORT = int(os.getenv("FLASK_PORT", 5000))
     
     # Database
-    DATABASE_PATH = BASE_DIR / "support_agent.db"
+    if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
+        DATABASE_PATH = Path("/tmp") / "support_agent.db"
+        # Seed or copy pre-existing database to writable /tmp on serverless cold start
+        if not DATABASE_PATH.exists():
+            source_db = BASE_DIR / "support_agent.db"
+            if source_db.exists():
+                try:
+                    import shutil
+                    shutil.copyfile(str(source_db), str(DATABASE_PATH))
+                except Exception:
+                    pass
+    else:
+        DATABASE_PATH = BASE_DIR / "support_agent.db"
     
     # Active LLM Provider: "demo", "gemini", "openai", "groq", "ollama"
     DEFAULT_LLM_PROVIDER = os.getenv("DEFAULT_LLM_PROVIDER", "demo").lower()
