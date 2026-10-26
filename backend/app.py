@@ -12,6 +12,7 @@ from backend.routes.settings_routes import settings_bp
 from backend.routes.analytics_routes import analytics_bp
 from backend.routes.dashboard_routes import dashboard_bp
 from backend.routes.agentforce_routes import agentforce_bp
+from backend.routes.evaluation_routes import evaluation_bp
 
 def create_app():
     # Points static folder to the root 'static' directory
@@ -35,6 +36,7 @@ def create_app():
     app.register_blueprint(analytics_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(agentforce_bp)
+    app.register_blueprint(evaluation_bp)
 
     # Health check endpoint
     @app.route("/api/health", methods=["GET"])

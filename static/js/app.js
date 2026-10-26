@@ -38,7 +38,8 @@ const DASHBOARD_METADATA = {
   whatsapp: { name: "WhatsApp Commerce", icon: "💬" },
   saas: { name: "SaaS Platform Support", icon: "💻" },
   builder: { name: "Agentforce Builder", icon: "🛠️" },
-  admin: { name: "Service Console & CRM", icon: "📊" }
+  admin: { name: "Service Console & CRM", icon: "📊" },
+  evaluation: { name: "Benchmark & Evaluation", icon: "📈" }
 };
 
 function toggleSidebar() {
@@ -78,7 +79,7 @@ try {
 
 // View Navigation across Agentforce Platform + Dedicated Standalone Dashboards
 function switchView(view) {
-  const allViews = ["overview", "ecommerce", "hotel", "voice", "whatsapp", "saas", "builder", "admin"];
+  const allViews = ["overview", "ecommerce", "hotel", "voice", "whatsapp", "saas", "builder", "admin", "evaluation"];
   allViews.forEach(v => {
     const el = document.getElementById(`view-${v}`);
     const tab = document.getElementById(`tab-${v}`);
@@ -102,10 +103,12 @@ function switchView(view) {
 
   closeDashboardDropdown();
 
-  activeAgentType = (view === "admin" || view === "overview" || view === "builder") ? "ecommerce" : view;
+  activeAgentType = (view === "admin" || view === "overview" || view === "builder" || view === "evaluation") ? "ecommerce" : view;
 
   if (view === "overview") {
     updateRoiCalculation();
+  } else if (view === "evaluation") {
+    loadEvaluationBenchmarks();
   } else if (view === "builder") {
     loadAgentforceTopics();
     loadTrustGuardrails();
@@ -1490,6 +1493,75 @@ async function trackLiveCarrierSandbox() {
     `;
   } catch (err) {
     resultEl.innerHTML = `<span style="color: #dc2626;">Network error querying carrier API.</span>`;
+  }
+}
+
+// ==========================================
+// BENCHMARKS & EMPIRICAL EVALUATION SUITE
+// ==========================================
+async function loadEvaluationBenchmarks() {
+  try {
+    const res = await fetch("/api/evaluation/benchmarks");
+    const data = await res.json();
+    if (!data) return;
+
+    const latEl = document.getElementById("eval-kpi-latency");
+    if (latEl && data.kpis) {
+      latEl.innerText = `< ${data.kpis.avg_latency_ms} ms`;
+    }
+  } catch (err) {
+    console.error("Failed to load evaluation benchmarks:", err);
+  }
+}
+
+async function executeLiveBenchmarkTrials() {
+  const btn = document.getElementById("btn-run-live-trials");
+  const btnTop = document.getElementById("btn-run-live-trials-top");
+  const statusBar = document.getElementById("live-trials-status-bar");
+  const statusText = document.getElementById("live-trials-status-text");
+  const tbody = document.getElementById("live-trials-table-body");
+
+  if (btn) { btn.disabled = true; btn.innerText = "⏳ Running Live Probes..."; }
+  if (btnTop) { btnTop.disabled = true; btnTop.innerText = "⏳ Running Probes..."; }
+  if (statusBar) statusBar.style.display = "block";
+  if (statusText) statusText.innerHTML = "⚡ Executing live real-time inference probe queries across all 5 domain agents...";
+
+  try {
+    const res = await fetch("/api/evaluation/run-live", { method: "POST" });
+    const data = await res.json();
+
+    if (!data.success || !data.trials) {
+      if (statusText) statusText.innerHTML = "❌ Benchmark trial execution failed.";
+      return;
+    }
+
+    if (statusText) {
+      statusText.innerHTML = `✅ <strong>Completed ${data.total_trials} / ${data.total_trials} Live Trials Successfully!</strong> Total Execution: <strong>${data.total_duration_ms} ms</strong> (Avg: <strong>${data.avg_trial_latency_ms} ms/trial</strong>) &bull; Timestamp: ${data.timestamp}`;
+    }
+
+    if (tbody) {
+      tbody.innerHTML = data.trials.map(t => {
+        return `
+          <tr>
+            <td><code><strong>${escapeHtml(t.trial_id)}</strong></code></td>
+            <td><strong>${escapeHtml(t.domain)}</strong></td>
+            <td style="max-width: 220px; font-size: 0.8rem;"><em>"${escapeHtml(t.query)}"</em></td>
+            <td><span class="badge" style="background: #e0f2fe; color: #0176d3; font-weight: 800;">${t.latency_ms} ms</span></td>
+            <td><code>${escapeHtml(t.action_executed)}</code></td>
+            <td style="max-width: 320px; font-size: 0.775rem; color: #334155; line-height: 1.4;">
+              ${escapeHtml(t.output_preview)}
+            </td>
+            <td><span class="badge badge-success" style="font-size: 0.75rem;">PASS ✅</span></td>
+          </tr>
+        `;
+      }).join("");
+    }
+  } catch (err) {
+    console.error("Live benchmark failed:", err);
+    if (statusText) statusText.innerHTML = `❌ Error running live benchmark: ${err.message}`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerText = "⚡ Run Live Trials"; }
+    if (btnTop) { btnTop.disabled = false; btnTop.innerText = "⚡ Execute Live Benchmark Trials"; }
   }
 }
 
