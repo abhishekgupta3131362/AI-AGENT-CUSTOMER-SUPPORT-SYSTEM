@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Snapshot A - Query workflow design</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: #f8fafc;
+      padding: 30px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      width: 820px;
+      background: #ffffff;
+      border: 2px solid #032d60;
+      border-radius: 14px;
+      padding: 2.25rem 2.5rem;
+      box-shadow: 0 15px 35px -5px rgba(3, 45, 96, 0.15);
+    }
+    .header-title {
+      text-align: center;
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #032d60;
+      margin-bottom: 2rem;
+      letter-spacing: -0.2px;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 1rem;
+    }
+    .step-card {
+      border: 2px solid #1e293b;
+      border-radius: 8px;
+      padding: 1rem 1.4rem;
+      background: #ffffff;
+      transition: all 0.2s;
+    }
+    .step-card.active-1 { border-color: #032d60; background: #f8fafc; }
+    .step-card.active-2 { border-color: #0176d3; background: #eff6ff; }
+    .step-card.active-3 { border-color: #04844b; background: #f0fdf4; }
+    .step-card.active-4 { border-color: #7c3aed; background: #faf5ff; }
+    
+    .step-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .step-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: 0.2px;
+    }
+    .step-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .arrow-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 36px;
+      justify-content: center;
+    }
+    .arrow-line {
+      width: 2px;
+      height: 22px;
+      background: #032d60;
+    }
+    .arrow-head {
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 8px solid #032d60;
+    }
+    .pill {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-right: 6px;
+      background: #e2e8f0;
+      color: #334155;
+    }
+    .code-box {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.85rem;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 0.6rem 0.85rem;
+      color: #0f172a;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1 class="header-title">Snapshot A - Query workflow design</h1>
+
+    <!-- BOX 1: Customer query -->
+    <div class="step-card active-1">
+      <div class="step-header">
+        <div class="step-title">1. Customer query</div>
+        <span class="step-badge" style="background: #032d60; color: #fff;">Input Ingestion</span>
+      </div>
+      <div class="code-box" style="font-weight: 600; color: #032d60;">
+        "Where is my Flipkart order OD409218392100?"
+      </div>
+      <div style="margin-top: 6px; font-size: 0.78rem; color: #64748b; display: flex; justify-content: space-between;">
+        <span>Channel: <strong>Web Chat / Ekart API Telemetry</strong></span>
+        <span>Pre-processing: <strong>Normalized UTF-8 &bull; Tokenized</strong></span>
+      </div>
+    </div>
+
+    <!-- Arrow 1 -->
+    <div class="arrow-container">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+    </div>
+
+    <!-- BOX 2: Intent and route selection -->
+    <div class="step-card active-2">
+      <div class="step-header">
+        <div class="step-title" style="color: #0176d3;">2. Intent and route selection</div>
+        <span class="step-badge" style="background: #0176d3; color: #fff;">Routing: E-Commerce Agent</span>
+      </div>
+      <div class="code-box" style="background: #ffffff; border-color: #bfdbfe; color: #1e3a8a;">
+        Intent: <strong>ORDER_STATUS_TELEMETRY</strong> &bull; Confidence: <strong style="color: #04844b;">99.4%</strong>
+      </div>
+      <div style="margin-top: 8px;">
+        <span class="pill" style="background: #dbeafe; color: #1e40af;">🏷️ Platform: Flipkart</span>
+        <span class="pill" style="background: #dbeafe; color: #1e40af;">📦 Order ID: OD409218392100</span>
+        <span class="pill" style="background: #dbeafe; color: #1e40af;">🚚 Carrier: Ekart Logistics</span>
+      </div>
+    </div>
+
+    <!-- Arrow 2 -->
+    <div class="arrow-container">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+    </div>
+
+    <!-- BOX 3: RAG / authorized tool -->
+    <div class="step-card active-3">
+      <div class="step-header">
+        <div class="step-title" style="color: #04844b;">3. RAG / authorized tool</div>
+        <span class="step-badge" style="background: #04844b; color: #fff;">Tool Execution: 18.4 ms</span>
+      </div>
+      <div class="code-box" style="background: #ffffff; border-color: #bbf7d0; color: #14532d;">
+        Tool: <code>get_flipkart_order_status(order_id='OD409218392100')</code><br>
+        Telemetry: <strong>Out for Delivery</strong> | Courier: <strong>Ramesh Kumar (+91 98112-44910)</strong> | OTP: <strong>4921</strong>
+      </div>
+      <div style="margin-top: 6px; font-size: 0.78rem; color: #15803d;">
+        RAG Grounding: <strong>Dense Vector Store (32 Articles) &bull; Zero Hallucination Isolated Context</strong>
+      </div>
+    </div>
+
+    <!-- Arrow 3 -->
+    <div class="arrow-container">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+    </div>
+
+    <!-- BOX 4: Safety check / handoff -->
+    <div class="step-card active-4">
+      <div class="step-header">
+        <div class="step-title" style="color: #7c3aed;">4. Safety check / handoff</div>
+        <span class="step-badge" style="background: #7c3aed; color: #fff;">Einstein Trust Layer</span>
+      </div>
+      <div class="code-box" style="background: #ffffff; border-color: #e9d5ff; color: #581c87;">
+        PII Masked: <strong>Yes</strong> &bull; Toxicity Shield: <strong>0.00 (Pass)</strong> &bull; Grounding: <strong>99.6%</strong> &bull; Confidence: <strong style="color: #04844b;">98.8%</strong>
+      </div>
+      <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
+        <span style="color: #581c87;">Escalation Status: <strong style="color: #04844b;">Not Required (Resolved Autonomously)</strong></span>
+        <span class="step-badge" style="background: #04844b; color: #fff;">Resolved 100% Autonomously ✅</span>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

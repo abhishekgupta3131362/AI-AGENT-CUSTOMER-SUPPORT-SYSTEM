@@ -27,6 +27,26 @@ document.addEventListener("DOMContentLoaded", () => {
   loadOrders();
   startCallTimer();
   updateRoiCalculation();
+
+  // Support URL routing for automated captures and direct deep links
+  const urlParams = new URLSearchParams(window.location.search);
+  const viewParam = urlParams.get("view");
+  if (viewParam && DASHBOARD_METADATA[viewParam]) {
+    switchView(viewParam);
+  }
+  const submodeParam = urlParams.get("submode");
+  if (submodeParam && viewParam) {
+    const domainPrefix = viewParam === "ecommerce" ? "ecom" : (viewParam === "hotel" ? "hotel" : (viewParam === "voice" ? "voice" : (viewParam === "whatsapp" ? "wa" : "saas")));
+    toggleSubmode(domainPrefix, submodeParam);
+  }
+  const autorunParam = urlParams.get("autorun");
+  if (autorunParam === "trials") {
+    setTimeout(() => {
+      if (typeof executeLiveBenchmarkTrials === "function") {
+        executeLiveBenchmarkTrials();
+      }
+    }, 400);
+  }
 });
 
 // Dashboard Metadata for App Launcher and Navigation
@@ -2078,4 +2098,124 @@ async function updateConfidenceSlider(val) {
   } catch (err) {
     console.error("Failed to update confidence threshold:", err);
   }
+}
+
+// ==========================================
+// SNAPSHOT A - QUERY WORKFLOW DESIGN RUNNER
+// ==========================================
+const SNAPSHOT_SCENARIOS = {
+  ecom: {
+    query: '"Where is my Flipkart order OD409218392100?"',
+    touchpoint: "Web Chat / Ekart API",
+    route: "E-Commerce Agent",
+    intent: "ORDER_STATUS_TELEMETRY",
+    conf: "99.4%",
+    slots: ["🏷️ Platform: Flipkart", "📦 OrderID: OD409218392100", "🎯 Carrier: Ekart Logistics"],
+    tool: "get_flipkart_order_status()",
+    latency: "18.4 ms",
+    output: "Status: Out for Delivery | Courier: Ekart (Ramesh Kumar +91-98112-44910) | Item: Nothing Phone (2a) 128GB | OTP: 4921",
+    escalation: "Not Required (Auto-Resolved)",
+    overallConf: "98.8%"
+  },
+  hotel: {
+    query: '"What luxury rooms are available tonight under $250 with ocean view?"',
+    touchpoint: "Hospitality Portal / Concierge",
+    route: "Hospitality Resort Agent",
+    intent: "ROOM_INVENTORY_LOOKUP",
+    conf: "98.2%",
+    slots: ["🏨 Property: Grand Apex Resort", "💵 Max Price: $250/night", "🌊 View: Ocean View King"],
+    tool: "check_room_availability(price_max=250)",
+    latency: "14.2 ms",
+    output: "Available: Deluxe Ocean View King ($189/night, 3 available) & Executive Palm Suite ($249/night, 1 available)",
+    escalation: "Not Required (Direct Booking Enabled)",
+    overallConf: "97.5%"
+  },
+  saas: {
+    query: '"Webhook is failing with ERR_AUTH_EXPIRED on production checkout"',
+    touchpoint: "Developer Console / API Gateway",
+    route: "SaaS Platform Support (Fin)",
+    intent: "API_ERROR_DIAGNOSTIC",
+    conf: "99.1%",
+    slots: ["💻 Code: ERR_AUTH_EXPIRED", "⏱️ TTL: 3600s Lifespan Exceeded", "🔑 Action: POST /oauth/v2/token"],
+    tool: "saas_error_diagnostic_lookup(code='ERR_AUTH_EXPIRED')",
+    latency: "21.6 ms",
+    output: "Cause: OAuth 2.0 token expired. Solution: Call POST /api/v2/oauth/token with grant_type='refresh_token'. Code remediation generated.",
+    escalation: "Not Required (Self-Service Fix Provided)",
+    overallConf: "99.3%"
+  },
+  voice: {
+    query: '"[Spoken Audio] Can I change the delivery address for order ORD-1002?"',
+    touchpoint: "Voice Telephony IVR / Web Speech STT",
+    route: "Voice Telephony Agent",
+    intent: "ADDRESS_MODIFICATION_HOLD",
+    conf: "92.0%",
+    slots: ["📞 Caller: Bob Smith (+1-555-0102)", "📦 Order: ORD-1002 (In Transit)", "⚠️ Policy: Courier In-Flight Rule"],
+    tool: "create_support_ticket(priority='HIGH', queue='Logistics')",
+    latency: "32.1 ms",
+    output: "Ticket TCK-102 dispatched to Human Courier Dispatcher Sarah M. to hold package at local depot.",
+    escalation: "Warm Transfer to Human Agent (SLA 3m)",
+    overallConf: "91.5%"
+  }
+};
+
+function switchSnapshotScenario(key) {
+  const sc = SNAPSHOT_SCENARIOS[key];
+  if (!sc) return;
+
+  ["ecom", "hotel", "saas", "voice"].forEach(k => {
+    const btn = document.getElementById(`btn-snap-scenario-${k}`);
+    if (btn) btn.classList.toggle("active", k === key);
+  });
+
+  const qEl = document.getElementById("snap-box-query-text");
+  const tpEl = document.getElementById("snap-touchpoint");
+  const rEl = document.getElementById("snap-route-badge");
+  const intEl = document.getElementById("snap-intent");
+  const confEl = document.getElementById("snap-intent-conf");
+  const slotsCont = document.getElementById("snap-slots-container");
+  const toolEl = document.getElementById("snap-tool-name");
+  const latEl = document.getElementById("snap-tool-latency");
+  const outEl = document.getElementById("snap-tool-output");
+  const escEl = document.getElementById("snap-escalation");
+  const oConfEl = document.getElementById("snap-confidence");
+  const resBadge = document.getElementById("snap-resolution-badge");
+
+  if (qEl) qEl.innerText = sc.query;
+  if (tpEl) tpEl.innerText = sc.touchpoint;
+  if (rEl) rEl.innerText = sc.route;
+  if (intEl) intEl.innerText = sc.intent;
+  if (confEl) confEl.innerText = sc.conf;
+  if (toolEl) toolEl.innerText = sc.tool;
+  if (latEl) latEl.innerText = sc.latency;
+  if (outEl) outEl.innerText = sc.output;
+  if (escEl) escEl.innerText = sc.escalation;
+  if (oConfEl) oConfEl.innerText = sc.overallConf;
+
+  if (slotsCont) {
+    slotsCont.innerHTML = sc.slots.map(s => `<span class="tool-chip">${escapeHtml(s)}</span>`).join(" ");
+  }
+
+  if (resBadge) {
+    if (key === "voice") {
+      resBadge.className = "badge badge-warning";
+      resBadge.innerText = "HUMAN WARM HANDOFF DISPATCHED 👤";
+    } else {
+      resBadge.className = "badge badge-success";
+      resBadge.innerText = "AUTONOMOUS RESOLUTION COMPLETED ✅";
+    }
+  }
+}
+
+function simulateSnapshotWorkflow() {
+  const steps = document.querySelectorAll(".snapshot-step-box");
+  steps.forEach((el, i) => {
+    setTimeout(() => {
+      el.style.transform = "scale(1.02)";
+      el.style.borderColor = "#00c6ff";
+      setTimeout(() => {
+        el.style.transform = "scale(1)";
+        el.style.borderColor = "";
+      }, 400);
+    }, i * 350);
+  });
 }
